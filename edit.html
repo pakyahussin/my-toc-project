@@ -384,15 +384,18 @@
             <button class="close-btn" id="close-chapter-modal-btn">&times;</button>
         </div>
 
-        <table class="link-table">
-            <thead>
-                <tr>
-                    <th>Chapter Name</th>
-                    <th style="width: 120px;">Action</th>
-                </tr>
-            </thead>
-            <tbody id="chapter-table-body"></tbody>
-        </table>
+        <!-- Wrap the chapter table with table-wrapper -->
+        <div class="table-wrapper">
+            <table class="link-table">
+                <thead>
+                    <tr>
+                        <th>Chapter Name</th>
+                        <th style="width: 120px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="chapter-table-body"></tbody>
+            </table>
+        </div>
 
         <div class="add-form">
             <input type="text" id="new-chapter-name" placeholder="New Chapter Name">
