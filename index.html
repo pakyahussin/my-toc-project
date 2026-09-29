@@ -255,7 +255,17 @@
             }
 
 .section-header-row {
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        width: 100% !important;
         margin-bottom: 12px;
+    }
+
+    /* Remove bottom margin on h3 so it aligns vertically with the button */
+    .section-header-row h3 {
+        margin: 0 !important;
     }
 
     .desktop-only {
@@ -264,7 +274,8 @@
 
     .mobile-only {
         display: inline-block !important;
-        padding: 4px 10px;
+        margin-top: 0 !important; /* Clears top margin on mobile */
+        padding: 5px 12px;
     }
 
         }
