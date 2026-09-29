@@ -67,6 +67,17 @@
             gap: 20px;
         }
 
+        .chapter-select {
+            display: none;
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            color: #333;
+        }
+
         .left-container h3 {
             margin-bottom: 20px;
             margin-top: 0;
@@ -96,6 +107,59 @@
         a:hover {
             text-decoration: underline;
         }
+
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+                font-size: 16px;
+            }
+
+            .main-layout {
+                flex-direction: column;
+                width: 100%;
+                gap: 16px;
+            }
+
+            .content-container {
+                width: 100% !important;
+                min-height: auto;
+                padding: 16px;
+            }
+
+            .right-container {
+                min-width: unset !important;
+            }
+
+            #chapter-list {
+                display: none;
+            }
+
+            .chapter-select {
+                display: block;
+            }
+
+            #link-list {
+                gap: 12px;
+            }
+
+            #link-list a {
+                font-size: 16px;
+                white-space: normal;
+                word-break: break-word;
+                padding: 10px 12px;
+                background-color: #f8f9fa;
+                border-radius: 6px;
+                border: 1px solid #e2e8f0;
+                width: 100%;
+                box-sizing: border-box;
+                display: block;
+            }
+
+            #link-list a:active {
+                background-color: #e2e8f0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -103,6 +167,7 @@
 <div class="main-layout">
     <div class="content-container left-container">
         <h3>Chapters</h3>
+        <select id="chapter-select" class="chapter-select" aria-label="Select Chapter"></select>
         <div id="chapter-list"></div>
     </div>
 
@@ -146,6 +211,16 @@
     let links = [];
 
     const linkList = document.getElementById('link-list');
+    const chapterSelect = document.getElementById('chapter-select');
+
+    chapterSelect.addEventListener('change', (e) => {
+        selectedChapter = e.target.value;
+        renderAll();
+    });
+
+    window.addEventListener('resize', () => {
+        updateContainerWidth();
+    });
 
     // Real-time synchronization listener (Read-Only)
     onSnapshot(docRef, (docSnap) => {
@@ -169,8 +244,10 @@
     function renderChapterList() {
         const chapterList = document.getElementById('chapter-list');
         chapterList.innerHTML = '';
+        chapterSelect.innerHTML = '';
 
         chapters.forEach(ch => {
+            // Desktop Links
             const link = document.createElement('a');
             link.textContent = ch;
             link.href = '#';
@@ -181,6 +258,15 @@
                 renderAll();
             };
             chapterList.appendChild(link);
+
+            // Mobile Dropdown Option
+            const option = document.createElement('option');
+            option.value = ch;
+            option.textContent = ch;
+            if (ch === selectedChapter) {
+                option.selected = true;
+            }
+            chapterSelect.appendChild(option);
         });
     }
 
@@ -201,6 +287,14 @@
 
     function updateContainerWidth() {
         const rightContainer = document.querySelector('.right-container');
+        if (!rightContainer) return;
+
+        // Skip manual inline sizing on mobile screens
+        if (window.innerWidth <= 768) {
+            rightContainer.style.minWidth = '';
+            return;
+        }
+
         if (!links.length) {
             rightContainer.style.minWidth = '';
             return;
