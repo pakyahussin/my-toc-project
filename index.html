@@ -176,43 +176,30 @@
     font-size: 14px;
 }
 
-/* --- Base / Desktop Layout --- */
-
-.section-container {
-    display: flex;
-    flex-direction: column;
-}
-
 .section-header-row {
     width: 100%;
     display: flex;
-    flex-direction: column; /* On desktop, stack elements so Settings drops down below */
-}
-
-.section-header-row h3 {
-    margin-top: 0;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 20px;
 }
 
-/* Desktop Settings Button: Placed 60px below #section-list */
-.settings-btn {
-    order: 2; /* Forces button below #section-list */
-    margin-top: 60px;
-    padding: 6px 12px;
-    font-size: 13px;
-    background-color: #f0f0f0;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    cursor: pointer;
-    align-self: flex-start; /* Keeps it left-aligned like list items */
+.section-header-row h3 {
+    margin: 0;
 }
 
 .settings-btn:hover {
     background-color: #e0e0e0;
 }
 
-#section-list {
-    order: 1; /* Keeps section list right under the header */
+/* Desktop default: Show desktop button (60px margin), hide mobile button */
+.desktop-only {
+    display: inline-block;
+    margin-top: 60px;
+}
+
+.mobile-only {
+    display: none;
 }
 
         /* Mobile Styles */
@@ -268,27 +255,16 @@
             }
 
 .section-header-row {
-        flex-direction: row; /* Horizontal alignment for heading & button */
-        justify-content: space-between;
-        align-items: center;
         margin-bottom: 12px;
     }
 
-            .section-header-row h3 {
-                margin-bottom: 0;
-            }
+    .desktop-only {
+        display: none !important;
+    }
 
-            /* Move the Settings button into the top header row visually on mobile */
-            .section-container {
-                position: relative;
-            }
-
-.settings-btn {
-        order: unset; /* Reset flex ordering on mobile */
-        margin-top: 0; /* Clear 60px gap on mobile */
+    .mobile-only {
+        display: inline-block !important;
         padding: 4px 10px;
-        font-size: 13px;
-        align-self: auto;
     }
 
         }
@@ -298,13 +274,14 @@
 
 <div class="main-layout">
 <!-- Sections Container -->
-<div class="content-container section-container">
+<div class="content-container">
     <div class="section-header-row">
         <h3>Sections</h3>
+        <button id="settings-btn-mobile" class="settings-btn mobile-only">Settings</button>
     </div>
     <select id="section-select" class="dropdown-select" aria-label="Select Section"></select>
     <div id="section-list"></div>
-    <button id="settings-btn" class="settings-btn">Settings</button>
+    <button id="settings-btn-desktop" class="settings-btn desktop-only">Settings</button>
 </div>
 
     <!-- Chapters Container -->
@@ -387,7 +364,6 @@
 
     let selectedFilter = 'all'; // 'all', 'Video', or 'Notes'
 
-    const settingsBtn = document.getElementById('settings-btn');
     const settingsModalOverlay = document.getElementById('settings-modal-overlay');
     const closeSettingsModalBtn = document.getElementById('close-settings-modal-btn');
     const filterRadioButtons = document.querySelectorAll('input[name="formatFilter"]');
@@ -436,11 +412,6 @@
         }
     });
 
-    // Settings Modal Event Listeners
-settingsBtn.addEventListener('click', () => {
-    settingsModalOverlay.style.display = 'flex';
-});
-
 closeSettingsModalBtn.addEventListener('click', () => {
     settingsModalOverlay.style.display = 'none';
 });
@@ -451,12 +422,21 @@ window.addEventListener('click', (e) => {
     }
 });
 
-filterRadioButtons.forEach(radio => {
-    radio.addEventListener('change', (e) => {
-        selectedFilter = e.target.value;
-        renderMainLinks();
+const settingsBtnDesktop = document.getElementById('settings-btn-desktop');
+const settingsBtnMobile = document.getElementById('settings-btn-mobile');
+
+// Open modal on click for either button
+if (settingsBtnDesktop) {
+    settingsBtnDesktop.addEventListener('click', () => {
+        settingsModalOverlay.style.display = 'flex';
     });
-});
+}
+
+if (settingsBtnMobile) {
+    settingsBtnMobile.addEventListener('click', () => {
+        settingsModalOverlay.style.display = 'flex';
+    });
+}
 
     function renderAll() {
         renderSectionList();
