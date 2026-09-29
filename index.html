@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TOC Project</title>
+    <title>PakyaNotes - Contents</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -173,11 +173,11 @@
     </div>
 
     <!-- Chapters Container -->
-    <div class="content-container">
-        <h3>Chapters</h3>
-        <select id="chapter-select" class="dropdown-select" aria-label="Select Chapter"></select>
-        <div id="chapter-list"></div>
-    </div>
+<div class="content-container" id="chapters-container">
+    <h3>Chapters</h3>
+    <select id="chapter-select" class="dropdown-select" aria-label="Select Chapter"></select>
+    <div id="chapter-list"></div>
+</div>
 
     <!-- Topics Container -->
     <div class="content-container right-container">
@@ -339,60 +339,79 @@
         });
     }
 
-    function renderMainLinks() {
-        linkList.innerHTML = '';
-        document.getElementById('current-chapter-title').textContent = selectedChapter || "No Chapter Selected";
+function renderMainLinks() {
+    linkList.innerHTML = '';
+    
+    // Updated header text format
+    const headerText = selectedChapter ? `Topics : ${selectedChapter}` : "No Chapter Selected";
+    document.getElementById('current-chapter-title').textContent = headerText;
 
-        if (!selectedChapter) return;
+    if (!selectedChapter) return;
 
-        const filtered = links.filter(item => item.chapter === selectedChapter);
-        filtered.forEach(item => {
-            const anchor = document.createElement('a');
-            anchor.href = item.url;
-            anchor.textContent = item.text;
-            anchor.target = "_blank";
-            anchor.rel = "noopener noreferrer";
-            if (item.color === 'red') {
-                anchor.style.color = 'red';
-            }
-            linkList.appendChild(anchor);
-        });
+    const filtered = links.filter(item => item.chapter === selectedChapter);
+    filtered.forEach(item => {
+        const anchor = document.createElement('a');
+        anchor.href = item.url;
+        anchor.textContent = item.text;
+        anchor.target = "_blank";
+        anchor.rel = "noopener noreferrer";
+        if (item.color === 'red') {
+            anchor.style.color = 'red';
+        }
+        linkList.appendChild(anchor);
+    });
+}
+
+function updateContainerWidth() {
+    const rightContainer = document.querySelector('.right-container');
+    const chaptersContainer = document.getElementById('chapters-container');
+
+    if (window.innerWidth <= 768) {
+        if (rightContainer) rightContainer.style.minWidth = '';
+        if (chaptersContainer) chaptersContainer.style.minWidth = '';
+        return;
     }
 
-    function updateContainerWidth() {
-        const rightContainer = document.querySelector('.right-container');
-        if (!rightContainer) return;
+    // Helper measurement span
+    const measurer = document.createElement('span');
+    measurer.style.visibility = 'hidden';
+    measurer.style.position = 'absolute';
+    measurer.style.whiteSpace = 'nowrap';
+    measurer.style.font = window.getComputedStyle(document.body).font;
+    document.body.appendChild(measurer);
 
-        if (window.innerWidth <= 768) {
-            rightContainer.style.minWidth = '';
-            return;
-        }
-
+    // 1. Calculate Topics width
+    if (rightContainer) {
         if (!links.length) {
             rightContainer.style.minWidth = '';
-            return;
+        } else {
+            let maxTopicWidth = 0;
+            links.forEach(item => {
+                measurer.textContent = item.text;
+                const width = measurer.getBoundingClientRect().width;
+                if (width > maxTopicWidth) maxTopicWidth = width;
+            });
+            rightContainer.style.minWidth = `${Math.ceil(maxTopicWidth) + 60}px`;
         }
-
-        const measurer = document.createElement('span');
-        measurer.style.visibility = 'hidden';
-        measurer.style.position = 'absolute';
-        measurer.style.whiteSpace = 'nowrap';
-        measurer.style.font = window.getComputedStyle(document.querySelector('#link-list') || document.body).font;
-
-        document.body.appendChild(measurer);
-
-        let maxWidth = 0;
-        links.forEach(item => {
-            measurer.textContent = item.text;
-            const width = measurer.getBoundingClientRect().width;
-            if (width > maxWidth) {
-                maxWidth = width;
-            }
-        });
-
-        document.body.removeChild(measurer);
-        rightContainer.style.minWidth = `${Math.ceil(maxWidth) + 60}px`;
     }
+
+    // 2. Calculate Chapters width
+    if (chaptersContainer) {
+        if (!chapters.length) {
+            chaptersContainer.style.minWidth = '';
+        } else {
+            let maxChapterWidth = 0;
+            chapters.forEach(ch => {
+                measurer.textContent = ch.name;
+                const width = measurer.getBoundingClientRect().width;
+                if (width > maxChapterWidth) maxChapterWidth = width;
+            });
+            chaptersContainer.style.minWidth = `${Math.ceil(maxChapterWidth) + 60}px`;
+        }
+    }
+
+    document.body.removeChild(measurer);
+}
 </script>
 </body>
 </html>
