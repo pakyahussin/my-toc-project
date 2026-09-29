@@ -21,18 +21,18 @@
             gap: 20px;
         }
 
-.content-container {
-    width: max-content; /* Auto-resizes box width based on content length */
-    background-color: #ffffff;
-    padding: 20px;
-    box-sizing: border-box;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    min-height: 80vh;
-}
+        .content-container {
+            width: max-content;
+            background-color: #ffffff;
+            padding: 20px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            min-height: 80vh;
+        }
 
         button {
             font-size: 14px;
@@ -41,57 +41,50 @@
             margin-bottom: 20px;
         }
 
-/* Chapter link styles matching topic links */
-.chapter-item {
-    font-size: 14px;
-    color: #0000ee;
-    text-decoration: none;
-    text-align: left;
-    cursor: pointer;
-    background: none;
-    border: none;
-    padding: 0;
-    margin: 0;
-    font-weight: normal;
-    white-space: nowrap;
-}
+        .chapter-item {
+            font-size: 14px;
+            color: #0000ee;
+            text-decoration: none;
+            text-align: left;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            margin: 0;
+            font-weight: normal;
+            white-space: nowrap;
+        }
 
-.chapter-item:hover {
-    color: #0000ee;
-    text-decoration: underline;
-}
+        .chapter-item:hover {
+            color: #0000ee;
+            text-decoration: underline;
+        }
 
-.chapter-item.active {
-    color: red;
-    text-decoration: underline;
-    font-weight: normal;
-}
+        .chapter-item.active {
+            color: red;
+            text-decoration: underline;
+            font-weight: normal;
+        }
 
-/* Chapter container layout & spacing */
-#chapter-list {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 20px;
-}
+        #chapter-list {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 20px;
+        }
 
-#edit-chapters-btn {
-    margin-bottom: 20px;
-}
+        #edit-chapters-btn {
+            margin-bottom: 20px;
+        }
 
+        .left-container h3 {
+            margin-bottom: 20px;
+        }
 
-/* Change or add margin to the left panel h3 */
-.left-container h3 {
-    //margin-top: 0;
-    margin-bottom: 20px;
-}
-
-/* Update #current-chapter-title margin-top */
-#current-chapter-title {
-    //margin-top: 0;
-    margin-bottom: 20px;
-}
+        #current-chapter-title {
+            margin-bottom: 20px;
+        }
 
         #link-list {
             width: 100%;
@@ -105,8 +98,8 @@
             font-size: 14px;
             color: #0000ee;
             text-decoration: none;
-	    text-align: left;
-	    white-space: nowrap;
+            text-align: left;
+            white-space: nowrap;
         }
 
         a:hover {
@@ -224,57 +217,54 @@
             background-color: #45a049;
         }
 
-tr.draggable {
-    cursor: grab;
-}
-tr.draggable:active {
-    cursor: grabbing;
-}
-tr.dragging {
-    opacity: 0.5;
-    background-color: #e0e0e0;
-}
-.chapter-select {
-    width: 100%;
-    padding: 4px;
-    font-size: 14px;
-}
-.button-row {
-    display: flex;
-    gap: 10px; /* Space between buttons */
-    margin-bottom: 20px;
-}
+        tr.draggable {
+            cursor: grab;
+        }
+        tr.draggable:active {
+            cursor: grabbing;
+        }
+        tr.dragging {
+            opacity: 0.5;
+            background-color: #e0e0e0;
+        }
+        .chapter-select {
+            width: 100%;
+            padding: 4px;
+            font-size: 14px;
+        }
+        .button-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
 
-button {
-    font-size: 14px;
-    padding: 6px 16px;
-    cursor: pointer;
-    margin-bottom: 0; /* Changed from 20px to 0 */
-}
+        button {
+            font-size: 14px;
+            padding: 6px 16px;
+            cursor: pointer;
+            margin-bottom: 0;
+        }
     </style>
 </head>
 <body>
 
 <div class="main-layout">
-    <!-- Left Panel: Chapters -->
     <div class="content-container left-container">
         <button id="edit-chapters-btn">Manage Chapters</button>
         <h3>Chapters</h3>
         <div id="chapter-list"></div>
     </div>
 
-    <!-- Right Panel: Topics/Links -->
-<div class="content-container right-container">
-    <div class="button-row">
-        <button id="edit-btn">Manage Links</button>
-        <button id="check-duplicates-btn">Check Duplicate Links</button>
-    </div>
-    <h3 id="current-chapter-title">Topics</h3>
+    <div class="content-container right-container">
+        <div class="button-row">
+            <button id="edit-btn">Manage Links</button>
+            <button id="check-duplicates-btn">Check Duplicate Links</button>
+        </div>
+        <h3 id="current-chapter-title">Topics</h3>
         <div id="link-list"></div>
     </div>
 </div>
 
-<!-- Modal: Topic / Link Management -->
 <div class="modal-overlay" id="modal-overlay">
     <div class="modal-content">
         <div class="modal-header">
@@ -302,7 +292,6 @@ button {
     </div>
 </div>
 
-<!-- Modal: Chapter Management -->
 <div class="modal-overlay" id="chapter-modal-overlay">
     <div class="modal-content">
         <div class="modal-header">
@@ -327,7 +316,6 @@ button {
     </div>
 </div>
 
-<!-- Modal: Duplicate Link Resolution -->
 <div class="modal-overlay" id="duplicate-modal-overlay">
     <div class="modal-content">
         <div class="modal-header">
@@ -347,8 +335,53 @@ button {
     </div>
 </div>
 
-<script>
-    // Elements
+<!-- Firebase SDK Imports -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+    // TODO: Paste your Firebase configuration values here (from Step 2)
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const docRef = doc(db, "app_data", "main_state");
+
+    let chapters = ["Miscellaneous"];
+    let selectedChapter = chapters[0];
+    let links = [];
+
+    // Save changes to Cloud Database
+    async function saveData() {
+        try {
+            await setDoc(docRef, { chapters, links });
+        } catch (e) {
+            console.error("Error writing document to Firebase: ", e);
+        }
+    }
+
+    // Real-time synchronization listener
+    onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            chapters = data.chapters || ["Miscellaneous"];
+            links = data.links || [];
+            if (!chapters.includes(selectedChapter)) {
+                selectedChapter = chapters[0] || "Miscellaneous";
+            }
+        } else {
+            saveData();
+        }
+        renderAll();
+    });
+
     const editBtn = document.getElementById('edit-btn');
     const linkList = document.getElementById('link-list');
     const modalOverlay = document.getElementById('modal-overlay');
@@ -364,22 +397,6 @@ button {
     const chapterTableBody = document.getElementById('chapter-table-body');
     const addChapterBtn = document.getElementById('add-chapter-btn');
 
-    // State Initialization
-    let chapters = JSON.parse(localStorage.getItem('saved_chapters')) || ["Miscellaneous"];
-    let selectedChapter = chapters[0];
-
-    let links = (JSON.parse(localStorage.getItem('saved_links')) || []).map(item => ({
-        ...item,
-        chapter: item.chapter || "Miscellaneous"
-    }));
-
-    function saveData() {
-        localStorage.setItem('saved_chapters', JSON.stringify(chapters));
-        localStorage.setItem('saved_links', JSON.stringify(links));
-        renderAll();
-        updateContainerWidth();
-    }
-
     function renderAll() {
         renderChapterList();
         renderMainLinks();
@@ -387,26 +404,24 @@ button {
         updateContainerWidth();
     }
 
-    // 1. Render Left Container (Chapters)
-function renderChapterList() {
-    const chapterList = document.getElementById('chapter-list');
-    chapterList.innerHTML = '';
+    function renderChapterList() {
+        const chapterList = document.getElementById('chapter-list');
+        chapterList.innerHTML = '';
 
-    chapters.forEach(ch => {
-        const link = document.createElement('a');
-        link.textContent = ch;
-        link.href = '#';
-        link.className = `chapter-item ${ch === selectedChapter ? 'active' : ''}`;
-        link.onclick = (e) => {
-            e.preventDefault();
-            selectedChapter = ch;
-            renderAll();
-        };
-        chapterList.appendChild(link);
-    });
-}
+        chapters.forEach(ch => {
+            const link = document.createElement('a');
+            link.textContent = ch;
+            link.href = '#';
+            link.className = `chapter-item ${ch === selectedChapter ? 'active' : ''}`;
+            link.onclick = (e) => {
+                e.preventDefault();
+                selectedChapter = ch;
+                renderAll();
+            };
+            chapterList.appendChild(link);
+        });
+    }
 
-    // 2. Render Right Container (Topics)
     function renderMainLinks() {
         linkList.innerHTML = '';
         document.getElementById('current-chapter-title').textContent = `${selectedChapter}`;
@@ -422,168 +437,165 @@ function renderChapterList() {
         });
     }
 
-// Dropdown Population & Auto-Select Listener
-function populateChapterDropdown() {
-    const dropdown = document.getElementById('new-chapter');
-    dropdown.innerHTML = '';
-    chapters.forEach(ch => {
-        const option = document.createElement('option');
-        option.value = ch;
-        option.textContent = ch;
-        if (ch === selectedChapter) option.selected = true;
-        dropdown.appendChild(option);
-    });
-}
-
-// Automatically change selected chapter and table contents on dropdown change
-document.getElementById('new-chapter').addEventListener('change', (e) => {
-    selectedChapter = e.target.value;
-    renderAll();
-    renderModalTable();
-});
-
-// Variable to keep track of item currently being dragged
-let draggedIndex = null;
-
-function renderModalTable() {
-    // Update top header text dynamically
-    document.querySelector('#modal-overlay .modal-header h3').textContent = `Manage Links : ${selectedChapter}`;
-
-    modalTableBody.innerHTML = '';
-
-    // Filter and map links matching the selected chapter along with original indices
-    const filtered = links
-        .map((item, originalIndex) => ({ ...item, originalIndex }))
-        .filter(item => item.chapter === selectedChapter);
-
-    filtered.forEach((item, displayIndex) => {
-        const row = document.createElement('tr');
-        row.className = 'draggable';
-        row.draggable = true;
-        row.dataset.index = displayIndex; // Local index for drag-and-drop ordering
-
-        const optionsHTML = chapters.map(ch => 
-            `<option value="${ch}" ${ch === item.chapter ? 'selected' : ''}>${ch}</option>`
-        ).join('');
-
-        row.innerHTML = `
-            <td>${item.text}</td>
-            <td>
-                <select class="chapter-select" onchange="changeLinkChapter(${item.originalIndex}, this.value)">
-                    ${optionsHTML}
-                </select>
-            </td>
-            <td>
-                <button class="edit-btn" onclick="editLink(${item.originalIndex})">Edit</button>
-                <button class="delete-btn" onclick="deleteLink(${item.originalIndex})">Delete</button>
-            </td>
-        `;
-
-        // Note: Pass filtered array context if implementing reordering within chapter
-        setupDragEvents(row, modalTableBody, filtered, () => {
-    // Rebuild global links array with the updated filtered order for current chapter
-    const otherLinks = links.filter(item => item.chapter !== selectedChapter);
-    links = [...otherLinks, ...filtered.map(({ originalIndex, ...item }) => item)];
-    saveData();
-    renderModalTable();
-});
-        modalTableBody.appendChild(row);
-    });
-}
-
-function renderChapterModalTable() {
-    chapterTableBody.innerHTML = '';
-    chapters.forEach((ch, index) => {
-        const row = document.createElement('tr');
-        row.className = 'draggable';
-        row.draggable = true;
-        row.dataset.index = index;
-
-        row.innerHTML = `
-            <td>${ch}</td>
-            <td>
-                <button class="edit-btn" onclick="editChapter(${index})">Edit</button>
-                <button class="delete-btn" onclick="deleteChapter('${ch}')">Delete</button>
-            </td>
-        `;
-
-        setupDragEvents(row, chapterTableBody, chapters, () => {
-    saveData();
-    renderChapterModalTable();
-});
-        chapterTableBody.appendChild(row);
-    });
-}
-
-// Handler to update chapter directly from dropdown selection
-function changeLinkChapter(index, newChapter) {
-    links[index].chapter = newChapter;
-    saveData();
-}
-
-// Drag & Drop event listener attachment helper
-function setupDragEvents(row, container, dataArray, onReorder) {
-    row.addEventListener('dragstart', (e) => {
-        draggedIndex = parseInt(row.dataset.index);
-        row.classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move';
-    });
-
-    row.addEventListener('dragend', () => {
-        row.classList.remove('dragging');
-        draggedIndex = null;
-    });
-
-    row.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-    });
-
-    row.addEventListener('drop', (e) => {
-        e.preventDefault();
-        const targetIndex = parseInt(row.dataset.index);
-if (draggedIndex !== null && draggedIndex !== targetIndex) {
-            const [movedItem] = dataArray.splice(draggedIndex, 1);
-            dataArray.splice(targetIndex, 0, movedItem);
-            
-            if (onReorder) onReorder();
-        }
-    });
-}
-
-function updateContainerWidth() {
-    const rightContainer = document.querySelector('.right-container');
-    if (!links.length) {
-        rightContainer.style.minWidth = '';
-        return;
+    function populateChapterDropdown() {
+        const dropdown = document.getElementById('new-chapter');
+        dropdown.innerHTML = '';
+        chapters.forEach(ch => {
+            const option = document.createElement('option');
+            option.value = ch;
+            option.textContent = ch;
+            if (ch === selectedChapter) option.selected = true;
+            dropdown.appendChild(option);
+        });
     }
 
-    // 1. Create a hidden element to measure the longest link text
-    const measurer = document.createElement('span');
-    measurer.style.visibility = 'hidden';
-    measurer.style.position = 'absolute';
-    measurer.style.whiteSpace = 'nowrap';
-    measurer.style.font = window.getComputedStyle(document.querySelector('#link-list') || document.body).font;
-
-    document.body.appendChild(measurer);
-
-    // 2. Find the maximum pixel width across ALL links in every chapter
-    let maxWidth = 0;
-    links.forEach(item => {
-        measurer.textContent = item.text;
-        const width = measurer.getBoundingClientRect().width;
-        if (width > maxWidth) {
-            maxWidth = width;
-        }
+    document.getElementById('new-chapter').addEventListener('change', (e) => {
+        selectedChapter = e.target.value;
+        renderAll();
+        renderModalTable();
     });
 
-    document.body.removeChild(measurer);
+    let draggedIndex = null;
 
-    // 3. Apply min-width to container (adding padding/margin buffer ~60px)
-    rightContainer.style.minWidth = `${Math.ceil(maxWidth) + 60}px`;
-}
+    function renderModalTable() {
+        document.querySelector('#modal-overlay .modal-header h3').textContent = `Manage Links : ${selectedChapter}`;
+        modalTableBody.innerHTML = '';
 
-    // 5. Actions: Links
+        const filtered = links
+            .map((item, originalIndex) => ({ ...item, originalIndex }))
+            .filter(item => item.chapter === selectedChapter);
+
+        filtered.forEach((item, displayIndex) => {
+            const row = document.createElement('tr');
+            row.className = 'draggable';
+            row.draggable = true;
+            row.dataset.index = displayIndex;
+
+            const optionsHTML = chapters.map(ch => 
+                `<option value="${ch}" ${ch === item.chapter ? 'selected' : ''}>${ch}</option>`
+            ).join('');
+
+            row.innerHTML = `
+                <td>${item.text}</td>
+                <td>
+                    <select class="chapter-select" data-orig-index="${item.originalIndex}">
+                        ${optionsHTML}
+                    </select>
+                </td>
+                <td>
+                    <button class="edit-btn" data-orig-index="${item.originalIndex}">Edit</button>
+                    <button class="delete-btn" data-orig-index="${item.originalIndex}">Delete</button>
+                </td>
+            `;
+
+            row.querySelector('.chapter-select').addEventListener('change', (e) => {
+                changeLinkChapter(item.originalIndex, e.target.value);
+            });
+            row.querySelector('.edit-btn').addEventListener('click', () => {
+                editLink(item.originalIndex);
+            });
+            row.querySelector('.delete-btn').addEventListener('click', () => {
+                deleteLink(item.originalIndex);
+            });
+
+            setupDragEvents(row, modalTableBody, filtered, () => {
+                const otherLinks = links.filter(item => item.chapter !== selectedChapter);
+                links = [...otherLinks, ...filtered.map(({ originalIndex, ...item }) => item)];
+                saveData();
+                renderModalTable();
+            });
+            modalTableBody.appendChild(row);
+        });
+    }
+
+    function renderChapterModalTable() {
+        chapterTableBody.innerHTML = '';
+        chapters.forEach((ch, index) => {
+            const row = document.createElement('tr');
+            row.className = 'draggable';
+            row.draggable = true;
+            row.dataset.index = index;
+
+            row.innerHTML = `
+                <td>${ch}</td>
+                <td>
+                    <button class="edit-btn" data-idx="${index}">Edit</button>
+                    <button class="delete-btn" data-ch="${ch}">Delete</button>
+                </td>
+            `;
+
+            row.querySelector('.edit-btn').addEventListener('click', () => editChapter(index));
+            row.querySelector('.delete-btn').addEventListener('click', () => deleteChapter(ch));
+
+            setupDragEvents(row, chapterTableBody, chapters, () => {
+                saveData();
+                renderChapterModalTable();
+            });
+            chapterTableBody.appendChild(row);
+        });
+    }
+
+    function changeLinkChapter(index, newChapter) {
+        links[index].chapter = newChapter;
+        saveData();
+    }
+
+    function setupDragEvents(row, container, dataArray, onReorder) {
+        row.addEventListener('dragstart', (e) => {
+            draggedIndex = parseInt(row.dataset.index);
+            row.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+
+        row.addEventListener('dragend', () => {
+            row.classList.remove('dragging');
+            draggedIndex = null;
+        });
+
+        row.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        });
+
+        row.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const targetIndex = parseInt(row.dataset.index);
+            if (draggedIndex !== null && draggedIndex !== targetIndex) {
+                const [movedItem] = dataArray.splice(draggedIndex, 1);
+                dataArray.splice(targetIndex, 0, movedItem);
+                if (onReorder) onReorder();
+            }
+        });
+    }
+
+    function updateContainerWidth() {
+        const rightContainer = document.querySelector('.right-container');
+        if (!links.length) {
+            rightContainer.style.minWidth = '';
+            return;
+        }
+
+        const measurer = document.createElement('span');
+        measurer.style.visibility = 'hidden';
+        measurer.style.position = 'absolute';
+        measurer.style.whiteSpace = 'nowrap';
+        measurer.style.font = window.getComputedStyle(document.querySelector('#link-list') || document.body).font;
+
+        document.body.appendChild(measurer);
+
+        let maxWidth = 0;
+        links.forEach(item => {
+            measurer.textContent = item.text;
+            const width = measurer.getBoundingClientRect().width;
+            if (width > maxWidth) {
+                maxWidth = width;
+            }
+        });
+
+        document.body.removeChild(measurer);
+        rightContainer.style.minWidth = `${Math.ceil(maxWidth) + 60}px`;
+    }
+
     addLinkBtn.addEventListener('click', () => {
         const text = newTextInput.value.trim();
         let url = newUrlInput.value.trim();
@@ -603,14 +615,14 @@ function updateContainerWidth() {
         renderModalTable();
     });
 
-window.addEventListener('click', (event) => {
-    if (event.target === modalOverlay) {
-        modalOverlay.style.display = 'none';
-    }
-    if (event.target === chapterModalOverlay) {
-        chapterModalOverlay.style.display = 'none';
-    }
-});
+    window.addEventListener('click', (event) => {
+        if (event.target === modalOverlay) {
+            modalOverlay.style.display = 'none';
+        }
+        if (event.target === chapterModalOverlay) {
+            chapterModalOverlay.style.display = 'none';
+        }
+    });
 
     function editLink(index) {
         const item = links[index];
@@ -639,7 +651,6 @@ window.addEventListener('click', (event) => {
         renderModalTable();
     }
 
-    // 6. Actions: Chapters
     addChapterBtn.addEventListener('click', () => {
         const nameInput = document.getElementById('new-chapter-name');
         const name = nameInput.value.trim();
@@ -669,7 +680,6 @@ window.addEventListener('click', (event) => {
 
         chapters[index] = cleanName;
 
-        // Migrate links
         links.forEach(item => {
             if (item.chapter === oldName) item.chapter = cleanName;
         });
@@ -698,7 +708,6 @@ window.addEventListener('click', (event) => {
         renderChapterModalTable();
     }
 
-    // 7. Modal Event Listeners
     editBtn.addEventListener('click', () => {
         renderModalTable();
         modalOverlay.style.display = 'flex';
@@ -717,108 +726,93 @@ window.addEventListener('click', (event) => {
         chapterModalOverlay.style.display = 'none';
     });
 
-    // Initial Load
-    renderAll();
+    const checkDuplicatesBtn = document.getElementById('check-duplicates-btn');
+    const duplicateModalOverlay = document.getElementById('duplicate-modal-overlay');
+    const duplicateModalTitle = document.getElementById('duplicate-modal-title');
+    const duplicateTableBody = document.getElementById('duplicate-table-body');
 
+    let duplicateGroups = [];
+    let currentGroupIndex = 0;
 
-// DOM References
-const checkDuplicatesBtn = document.getElementById('check-duplicates-btn');
-const duplicateModalOverlay = document.getElementById('duplicate-modal-overlay');
-const duplicateModalTitle = document.getElementById('duplicate-modal-title');
-const duplicateTableBody = document.getElementById('duplicate-table-body');
-
-// State for handling duplicate queue
-let duplicateGroups = [];
-let currentGroupIndex = 0;
-
-// Helper function to find all duplicate groups based on identical URL
-function findDuplicateGroups() {
-    const urlMap = {};
-    links.forEach((link, index) => {
-        const normalizedUrl = link.url.trim().toLowerCase();
-        if (!urlMap[normalizedUrl]) {
-            urlMap[normalizedUrl] = [];
-        }
-        urlMap[normalizedUrl].push({ ...link, globalIndex: index });
-    });
-
-    // Keep groups that have more than 1 occurrence
-    return Object.values(urlMap).filter(group => group.length > 1);
-}
-
-// Click handler for "Check Duplicate Links"
-checkDuplicatesBtn.addEventListener('click', () => {
-    duplicateGroups = findDuplicateGroups();
-
-    if (duplicateGroups.length === 0) {
-        alert("No duplicates found !");
-        return;
-    }
-
-    currentGroupIndex = 0;
-    showDuplicateGroupModal();
-});
-
-// Render modal for the active duplicate group
-function showDuplicateGroupModal() {
-    if (currentGroupIndex >= duplicateGroups.length) {
-        duplicateModalOverlay.style.display = 'none';
-        alert("All duplicates resolved!");
-        saveData();
-        return;
-    }
-
-    const currentGroup = duplicateGroups[currentGroupIndex];
-    
-    // Check if group has been reduced to 1 link
-    if (currentGroup.length <= 1) {
-        currentGroupIndex++;
-        showDuplicateGroupModal();
-        return;
-    }
-
-    duplicateModalOverlay.style.display = 'flex';
-    duplicateModalTitle.textContent = `Duplicate Set ${currentGroupIndex + 1} of ${duplicateGroups.length} (${currentGroup[0].url})`;
-    
-    duplicateTableBody.innerHTML = '';
-    
-    currentGroup.forEach((item, localIndex) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${item.text}</td>
-            <td>${item.chapter}</td>
-            <td>
-                <button class="delete-btn" onclick="removeDuplicateItem(${localIndex})">Delete</button>
-            </td>
-        `;
-        duplicateTableBody.appendChild(row);
-    });
-}
-
-// Remove item from active duplicate set and global links
-function removeDuplicateItem(localIndex) {
-    const currentGroup = duplicateGroups[currentGroupIndex];
-    const itemToRemove = currentGroup[localIndex];
-
-    // Remove from main links array
-    links.splice(itemToRemove.globalIndex, 1);
-
-    // Update remaining index references across all duplicate groups
-    duplicateGroups.forEach(group => {
-        group.forEach(item => {
-            if (item.globalIndex > itemToRemove.globalIndex) {
-                item.globalIndex--;
+    function findDuplicateGroups() {
+        const urlMap = {};
+        links.forEach((link, index) => {
+            const normalizedUrl = link.url.trim().toLowerCase();
+            if (!urlMap[normalizedUrl]) {
+                urlMap[normalizedUrl] = [];
             }
+            urlMap[normalizedUrl].push({ ...link, globalIndex: index });
         });
+
+        return Object.values(urlMap).filter(group => group.length > 1);
+    }
+
+    checkDuplicatesBtn.addEventListener('click', () => {
+        duplicateGroups = findDuplicateGroups();
+
+        if (duplicateGroups.length === 0) {
+            alert("No duplicates found !");
+            return;
+        }
+
+        currentGroupIndex = 0;
+        showDuplicateGroupModal();
     });
 
-    // Remove from current group local list
-    currentGroup.splice(localIndex, 1);
+    function showDuplicateGroupModal() {
+        if (currentGroupIndex >= duplicateGroups.length) {
+            duplicateModalOverlay.style.display = 'none';
+            alert("All duplicates resolved!");
+            saveData();
+            return;
+        }
 
-    saveData();
-    showDuplicateGroupModal();
-}
+        const currentGroup = duplicateGroups[currentGroupIndex];
+        
+        if (currentGroup.length <= 1) {
+            currentGroupIndex++;
+            showDuplicateGroupModal();
+            return;
+        }
 
+        duplicateModalOverlay.style.display = 'flex';
+        duplicateModalTitle.textContent = `Duplicate Set ${currentGroupIndex + 1} of ${duplicateGroups.length} (${currentGroup[0].url})`;
+        
+        duplicateTableBody.innerHTML = '';
+        
+        currentGroup.forEach((item, localIndex) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${item.text}</td>
+                <td>${item.chapter}</td>
+                <td>
+                    <button class="delete-btn" data-local-idx="${localIndex}">Delete</button>
+                </td>
+            `;
+            row.querySelector('.delete-btn').addEventListener('click', () => removeDuplicateItem(localIndex));
+            duplicateTableBody.appendChild(row);
+        });
+    }
+
+    function removeDuplicateItem(localIndex) {
+        const currentGroup = duplicateGroups[currentGroupIndex];
+        const itemToRemove = currentGroup[localIndex];
+
+        links.splice(itemToRemove.globalIndex, 1);
+
+        duplicateGroups.forEach(group => {
+            group.forEach(item => {
+                if (item.globalIndex > itemToRemove.globalIndex) {
+                    item.globalIndex--;
+                }
+            });
+        });
+
+        currentGroup.splice(localIndex, 1);
+
+        saveData();
+        showDuplicateGroupModal();
+    }
 </script>
 </body>
 </html>
