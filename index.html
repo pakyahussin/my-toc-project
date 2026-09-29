@@ -338,7 +338,14 @@
 <!-- Firebase SDK Imports -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+    import { 
+    initializeFirestore, 
+    persistentLocalCache, 
+    persistentMultipleTabManager, 
+    doc, 
+    setDoc, 
+    onSnapshot 
+} from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBgDtEmsmmglLcx6BbzR-IfFZ31duTPOag",
@@ -351,7 +358,11 @@ const firebaseConfig = {
 };
 
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    const db = initializeFirestore(app, {
+    localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+    })
+});
     const docRef = doc(db, "app_data", "main_state");
 
     let chapters = ["Miscellaneous"];
@@ -368,19 +379,20 @@ const firebaseConfig = {
     }
 
     // Real-time synchronization listener
-    onSnapshot(docRef, (docSnap) => {
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            chapters = data.chapters || ["Miscellaneous"];
-            links = data.links || [];
-            if (!chapters.includes(selectedChapter)) {
-                selectedChapter = chapters[0] || "Miscellaneous";
-            }
-        } else {
-            saveData();
+onSnapshot(docRef, (docSnap) => {
+    if (docSnap.exists()) {
+        const data = docSnap.data();
+        chapters = data.chapters || ["Miscellaneous"];
+        links = data.links || [];
+        if (!chapters.includes(selectedChapter)) {
+            selectedChapter = chapters[0] || "Miscellaneous";
         }
         renderAll();
-    });
+    } else if (!docSnap.metadata.fromCache) {
+        // Only seed default data if confirmed non-existent on the server side
+        saveData();
+    }
+});
 
     const editBtn = document.getElementById('edit-btn');
     const linkList = document.getElementById('link-list');
