@@ -669,31 +669,32 @@ row.querySelector('.color-select').addEventListener('change', (e) => {
         });
     }
 
-    function renderChapterModalTable() {
-        chapterTableBody.innerHTML = '';
-        chapters.forEach((ch, index) => {
-            const row = document.createElement('tr');
-            row.className = 'draggable';
-            row.draggable = true;
-            row.dataset.index = index;
+function renderChapterModalTable() {
+    chapterTableBody.innerHTML = '';
+    chapters.forEach((ch, index) => {
+        const row = document.createElement('tr');
+        row.className = 'draggable';
+        row.draggable = true;
+        row.dataset.index = index;
 
-            row.innerHTML = `
-                <td>${ch}</td>
-                <td>
-                    <button class="edit-btn" data-idx="${index}">Edit</button>
-                    <button class="delete-btn" data-ch="${ch}">Delete</button>
-                </td>
-            `;
+        row.innerHTML = `
+            <td>${ch}</td>
+            <td>
+                <button class="edit-btn" data-idx="${index}">Edit</button>
+                <button class="delete-btn" data-ch="${ch}">Delete</button>
+            </td>
+        `;
 
-            row.querySelector('.edit-btn').addEventListener('click', () => editChapter(index));
-            row.querySelector('.delete-btn').addEventListener('click', () => deleteChapter(ch));
+        row.querySelector('.edit-btn').addEventListener('click', () => editChapter(index));
+        row.querySelector('.delete-btn').addEventListener('click', () => deleteChapter(ch));
 
-            setupDragEvents(row, chapterTableBody, chapters, () => {
-                saveData();
-            });
-            chapterTableBody.appendChild(row);
+        setupDragEvents(row, chapterTableBody, chapters, () => {
+            saveData();
+            renderChapterModalTable(); // <-- ADD THIS BACK
         });
-    }
+        chapterTableBody.appendChild(row);
+    });
+}
 
 // AFTER
     function changeLinkChapter(index, newChapter) {
