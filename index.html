@@ -354,18 +354,12 @@ const firebaseConfig = {
     const db = getFirestore(app);
     const docRef = doc(db, "app_data", "main_state");
 
-// 1. INSTANT LOAD: Initialize immediately from LocalStorage cache
-    let chapters = JSON.parse(localStorage.getItem('cached_chapters')) || ["Miscellaneous"];
+    let chapters = ["Miscellaneous"];
     let selectedChapter = chapters[0];
-    let links = JSON.parse(localStorage.getItem('cached_links')) || [];
+    let links = [];
 
-    // Save data both locally (for instant load next time) and to Firebase
+    // Save changes to Cloud Database
     async function saveData() {
-        // Update local cache immediately
-        localStorage.setItem('cached_chapters', JSON.stringify(chapters));
-        localStorage.setItem('cached_links', JSON.stringify(links));
-
-        // Sync to cloud
         try {
             await setDoc(docRef, { chapters, links });
         } catch (e) {
@@ -373,17 +367,12 @@ const firebaseConfig = {
         }
     }
 
-    // 2. BACKGROUND SYNC: Listen for Firebase updates and refresh cache silently
+    // Real-time synchronization listener
     onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
             const data = docSnap.data();
             chapters = data.chapters || ["Miscellaneous"];
             links = data.links || [];
-
-            // Keep cache fresh for next page load
-            localStorage.setItem('cached_chapters', JSON.stringify(chapters));
-            localStorage.setItem('cached_links', JSON.stringify(links));
-
             if (!chapters.includes(selectedChapter)) {
                 selectedChapter = chapters[0] || "Miscellaneous";
             }
@@ -392,9 +381,6 @@ const firebaseConfig = {
         }
         renderAll();
     });
-
-    // Render instantly on page render using cached data
-    renderAll();
 
     const editBtn = document.getElementById('edit-btn');
     const linkList = document.getElementById('link-list');
