@@ -611,20 +611,26 @@ function renderMainLinks() {
                 `<option value="${ch}" ${ch === item.chapter ? 'selected' : ''}>${ch}</option>`
             ).join('');
 
-            row.innerHTML = `
-                <td>${item.text}</td>
-                <td>
-                    <select class="chapter-select" data-orig-index="${item.originalIndex}">
-                        ${optionsHTML}
-                    </select>
-                </td>
-                <td>
-                    <button class="edit-btn" data-orig-index="${item.originalIndex}">Edit</button>
-                    <button class="delete-btn" data-orig-index="${item.originalIndex}">Delete</button>
-                </td>
-            `;
+row.innerHTML = `
+    <td>${item.text}</td>
+    <td>
+        <select class="chapter-select" data-orig-index="${item.originalIndex}">
+            ${optionsHTML}
+        </select>
+    </td>
+    <td>
+        <select class="color-select" data-orig-index="${item.originalIndex}">
+            <option value="blue" ${item.color === 'red' ? '' : 'selected'}>blue</option>
+            <option value="red" ${item.color === 'red' ? 'selected' : ''}>red</option>
+        </select>
+    </td>
+    <td>
+        <button class="edit-btn" data-orig-index="${item.originalIndex}">Edit</button>
+        <button class="delete-btn" data-orig-index="${item.originalIndex}">Delete</button>
+    </td>
+`;
 
-            row.querySelector('.color-select').addEventListener('change', (e) => {
+row.querySelector('.color-select').addEventListener('change', (e) => {
     links[item.originalIndex].color = e.target.value;
     saveData();
 });
