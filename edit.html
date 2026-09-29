@@ -335,8 +335,9 @@
             <div id="section-list"></div>
         </div>
 
-<!-- Chapters Container -->
+<!-- Chapters Column -->
 <div class="content-container" id="chapters-container">
+    <button id="edit-chapters-btn">Manage Chapters</button>
     <h3>Chapters</h3>
     <div id="chapter-list"></div>
 </div>
@@ -660,7 +661,7 @@
 function renderMainLinks() {
     linkList.innerHTML = '';
     
-    // Updated header text format
+    // Updated header text to include "Topics : "
     const headerText = selectedChapter ? `Topics : ${selectedChapter}` : "No Chapter Selected";
     document.getElementById('current-chapter-title').textContent = headerText;
 
@@ -894,13 +895,6 @@ function updateContainerWidth() {
     const rightContainer = document.querySelector('.right-container');
     const chaptersContainer = document.getElementById('chapters-container');
 
-    if (window.innerWidth <= 768) {
-        if (rightContainer) rightContainer.style.minWidth = '';
-        if (chaptersContainer) chaptersContainer.style.minWidth = '';
-        return;
-    }
-
-    // Helper measurement span
     const measurer = document.createElement('span');
     measurer.style.visibility = 'hidden';
     measurer.style.position = 'absolute';
