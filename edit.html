@@ -696,9 +696,13 @@ row.querySelector('.color-select').addEventListener('change', (e) => {
         });
     }
 
+// AFTER
     function changeLinkChapter(index, newChapter) {
         links[index].chapter = newChapter;
+        selectedChapter = newChapter; // Automatically switch view to the new chapter
         saveData();
+        renderAll();        // Refresh main page and active state
+        renderModalTable(); // Re-render modal to show the link under its new chapter immediately
     }
 
     function setupDragEvents(row, container, dataArray, onReorder) {
