@@ -690,7 +690,6 @@ row.querySelector('.color-select').addEventListener('change', (e) => {
 
             setupDragEvents(row, chapterTableBody, chapters, () => {
                 saveData();
-                renderChapterModalTable();
             });
             chapterTableBody.appendChild(row);
         });
@@ -705,33 +704,34 @@ row.querySelector('.color-select').addEventListener('change', (e) => {
         renderModalTable(); // Re-render modal to show the link under its new chapter immediately
     }
 
-    function setupDragEvents(row, container, dataArray, onReorder) {
-        row.addEventListener('dragstart', (e) => {
-            draggedIndex = parseInt(row.dataset.index);
-            row.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-        });
+function setupDragEvents(row, container, dataArray, onReorder) {
+    row.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/plain', row.dataset.index);
+        row.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+    });
 
-        row.addEventListener('dragend', () => {
-            row.classList.remove('dragging');
-            draggedIndex = null;
-        });
+    row.addEventListener('dragend', () => {
+        row.classList.remove('dragging');
+    });
 
-        row.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-        });
+    row.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    });
 
-        row.addEventListener('drop', (e) => {
-            e.preventDefault();
-            const targetIndex = parseInt(row.dataset.index);
-            if (draggedIndex !== null && draggedIndex !== targetIndex) {
-                const [movedItem] = dataArray.splice(draggedIndex, 1);
-                dataArray.splice(targetIndex, 0, movedItem);
-                if (onReorder) onReorder();
-            }
-        });
-    }
+    row.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
+        const toIndex = parseInt(row.dataset.index);
+
+        if (!isNaN(fromIndex) && fromIndex !== toIndex) {
+            const [movedItem] = dataArray.splice(fromIndex, 1);
+            dataArray.splice(toIndex, 0, movedItem);
+            if (onReorder) onReorder();
+        }
+    });
+}
 
     function updateContainerWidth() {
         const rightContainer = document.querySelector('.right-container');
