@@ -138,6 +138,14 @@
             width: 90%;
             max-width: fit-content;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .table-wrapper {
+            overflow-y: auto;
+            flex-grow: 1;
         }
 
         .modal-header {
@@ -345,17 +353,20 @@
             <button class="close-btn" id="close-modal-btn">&times;</button>
         </div>
 
-        <table class="link-table">
-            <thead>
-                <tr>
-                    <th>Text</th>
-                    <th>Chapter</th>
-                    <th>Link color</th>
-                    <th style="width: 120px;">Action</th>
-                </tr>
-            </thead>
-            <tbody id="modal-table-body"></tbody>
-        </table>
+        <!-- Wrap the table with table-wrapper -->
+        <div class="table-wrapper">
+            <table class="link-table">
+                <thead>
+                    <tr>
+                        <th>Text</th>
+                        <th>Chapter</th>
+                        <th>Link color</th>
+                        <th style="width: 120px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="modal-table-body"></tbody>
+            </table>
+        </div>
 
         <div class="add-form">
             <input type="text" id="new-text" placeholder="Display Text">
