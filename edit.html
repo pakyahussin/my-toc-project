@@ -820,48 +820,56 @@ function renderMainLinks() {
         renderModalTable();
     }
 
-    // --- Manage Chapters Modal Table ---
-    function renderChapterModalTable() {
-        chapterTableBody.innerHTML = '';
-        chapters.forEach((ch, index) => {
-            const row = document.createElement('tr');
-            row.className = 'draggable';
-            row.draggable = true;
-            row.dataset.index = index;
+// --- Manage Chapters Modal Table ---
+function renderChapterModalTable() {
+    chapterTableBody.innerHTML = '';
+    
+    // Filter to only show chapters for the selected section
+    const filteredChapters = chapters.filter(ch => ch.section === selectedSection);
 
-            const sectionOptionsHTML = sections.map(sec => 
-                `<option value="${sec}" ${sec === ch.section ? 'selected' : ''}>${sec}</option>`
-            ).join('');
+    filteredChapters.forEach((ch) => {
+        // Find the actual index of this chapter in the global chapters array
+        const globalIndex = chapters.findIndex(c => c.name === ch.name);
 
-            row.innerHTML = `
-                <td>${ch.name}</td>
-                <td>
-                    <select class="section-select" data-idx="${index}">
-                        ${sectionOptionsHTML}
-                    </select>
-                </td>
-                <td>
-                    <button class="edit-btn" data-idx="${index}">Edit</button>
-                    <button class="delete-btn" data-ch="${ch.name}">Delete</button>
-                </td>
-            `;
+        const row = document.createElement('tr');
+        row.className = 'draggable';
+        row.draggable = true;
+        row.dataset.index = globalIndex;
 
-            row.querySelector('.section-select').addEventListener('change', (e) => {
-                chapters[index].section = e.target.value;
-                saveData();
-                renderAll();
-            });
+        const sectionOptionsHTML = sections.map(sec => 
+            `<option value="${sec}" ${sec === ch.section ? 'selected' : ''}>${sec}</option>`
+        ).join('');
 
-            row.querySelector('.edit-btn').addEventListener('click', () => editChapter(index));
-            row.querySelector('.delete-btn').addEventListener('click', () => deleteChapter(ch.name));
+        row.innerHTML = `
+            <td>${ch.name}</td>
+            <td>
+                <select class="section-select" data-idx="${globalIndex}">
+                    ${sectionOptionsHTML}
+                </select>
+            </td>
+            <td>
+                <button class="edit-btn" data-idx="${globalIndex}">Edit</button>
+                <button class="delete-btn" data-ch="${ch.name}">Delete</button>
+            </td>
+        `;
 
-            setupDragEvents(row, chapterTableBody, chapters, () => {
-                saveData();
-                renderChapterModalTable();
-            });
-            chapterTableBody.appendChild(row);
+        row.querySelector('.section-select').addEventListener('change', (e) => {
+            chapters[globalIndex].section = e.target.value;
+            saveData();
+            renderAll();
+            renderChapterModalTable(); // Refresh table after moving section
         });
-    }
+
+        row.querySelector('.edit-btn').addEventListener('click', () => editChapter(globalIndex));
+        row.querySelector('.delete-btn').addEventListener('click', () => deleteChapter(ch.name));
+
+        setupDragEvents(row, chapterTableBody, chapters, () => {
+            saveData();
+            renderChapterModalTable();
+        });
+        chapterTableBody.appendChild(row);
+    });
+}
 
     // --- Manage Sections Modal Table ---
     function renderSectionModalTable() {
@@ -1118,10 +1126,11 @@ function updateContainerWidth() {
         modalOverlay.style.display = 'none';
     });
 
-    editChaptersBtn.addEventListener('click', () => {
-        renderChapterModalTable();
-        chapterModalOverlay.style.display = 'flex';
-    });
+editChaptersBtn.addEventListener('click', () => {
+    document.querySelector('#chapter-modal-overlay .modal-header h3').textContent = `Manage Chapters : ${selectedSection}`;
+    renderChapterModalTable();
+    chapterModalOverlay.style.display = 'flex';
+});
 
     closeChapterModalBtn.addEventListener('click', () => {
         chapterModalOverlay.style.display = 'none';
