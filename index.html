@@ -34,7 +34,7 @@
             min-height: 80vh;
         }
 
-        .chapter-item {
+        .list-item {
             font-size: 14px;
             color: #0000ee;
             text-decoration: none;
@@ -48,18 +48,18 @@
             white-space: nowrap;
         }
 
-        .chapter-item:hover {
+        .list-item:hover {
             color: #0000ee;
             text-decoration: underline;
         }
 
-        .chapter-item.active {
+        .list-item.active {
             color: red;
             text-decoration: underline;
             font-weight: normal;
         }
 
-        #chapter-list {
+        #section-list, #chapter-list {
             width: 100%;
             display: flex;
             flex-direction: column;
@@ -67,7 +67,7 @@
             gap: 20px;
         }
 
-        .chapter-select {
+        .dropdown-select {
             display: none;
             width: 100%;
             padding: 10px;
@@ -78,7 +78,7 @@
             color: #333;
         }
 
-        .left-container h3 {
+        .content-container h3 {
             margin-bottom: 20px;
             margin-top: 0;
         }
@@ -131,11 +131,11 @@
                 min-width: unset !important;
             }
 
-            #chapter-list {
+            #section-list, #chapter-list {
                 display: none;
             }
 
-            .chapter-select {
+            .dropdown-select {
                 display: block;
             }
 
@@ -165,12 +165,21 @@
 <body>
 
 <div class="main-layout">
-    <div class="content-container left-container">
+    <!-- Sections Container -->
+    <div class="content-container">
+        <h3>Sections</h3>
+        <select id="section-select" class="dropdown-select" aria-label="Select Section"></select>
+        <div id="section-list"></div>
+    </div>
+
+    <!-- Chapters Container -->
+    <div class="content-container">
         <h3>Chapters</h3>
-        <select id="chapter-select" class="chapter-select" aria-label="Select Chapter"></select>
+        <select id="chapter-select" class="dropdown-select" aria-label="Select Chapter"></select>
         <div id="chapter-list"></div>
     </div>
 
+    <!-- Topics Container -->
     <div class="content-container right-container">
         <h3 id="current-chapter-title">Topics</h3>
         <div id="link-list"></div>
@@ -206,12 +215,23 @@
     });
     const docRef = doc(db, "app_data", "main_state");
 
-    let chapters = ["Miscellaneous"];
-    let selectedChapter = chapters[0];
+    let sections = ["Miscellaneous"];
+    let chapters = [{ name: "Miscellaneous", section: "Miscellaneous" }];
     let links = [];
 
+    let selectedSection = "Miscellaneous";
+    let selectedChapter = "Miscellaneous";
+
     const linkList = document.getElementById('link-list');
+    const sectionSelect = document.getElementById('section-select');
     const chapterSelect = document.getElementById('chapter-select');
+
+    sectionSelect.addEventListener('change', (e) => {
+        selectedSection = e.target.value;
+        const availableChapters = chapters.filter(ch => ch.section === selectedSection);
+        selectedChapter = availableChapters[0] ? availableChapters[0].name : "";
+        renderAll();
+    });
 
     chapterSelect.addEventListener('change', (e) => {
         selectedChapter = e.target.value;
@@ -226,19 +246,66 @@
     onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
             const data = docSnap.data();
-            chapters = data.chapters || ["Miscellaneous"];
-            links = data.links || [];
-            if (!chapters.includes(selectedChapter)) {
-                selectedChapter = chapters[0] || "Miscellaneous";
+            sections = data.sections || ["Miscellaneous"];
+            
+            // Backwards compatibility migration for string chapters
+            if (data.chapters && typeof data.chapters[0] === 'string') {
+                chapters = data.chapters.map(ch => ({ name: ch, section: "Miscellaneous" }));
+            } else {
+                chapters = data.chapters || [{ name: "Miscellaneous", section: "Miscellaneous" }];
             }
+
+            links = data.links || [];
+
+            if (!sections.includes(selectedSection)) {
+                selectedSection = sections[0] || "Miscellaneous";
+            }
+
+            const availableChapters = chapters.filter(ch => ch.section === selectedSection);
+            if (!availableChapters.some(ch => ch.name === selectedChapter)) {
+                selectedChapter = availableChapters[0] ? availableChapters[0].name : "";
+            }
+
             renderAll();
         }
     });
 
     function renderAll() {
+        renderSectionList();
         renderChapterList();
         renderMainLinks();
         updateContainerWidth();
+    }
+
+    function renderSectionList() {
+        const sectionList = document.getElementById('section-list');
+        sectionList.innerHTML = '';
+        sectionSelect.innerHTML = '';
+
+        sections.forEach(sec => {
+            // Desktop Links
+            const link = document.createElement('a');
+            link.textContent = sec;
+            link.href = '#';
+            link.className = `list-item ${sec === selectedSection ? 'active' : ''}`;
+            link.onclick = (e) => {
+                e.preventDefault();
+                selectedSection = sec;
+                const availableChapters = chapters.filter(ch => ch.section === selectedSection);
+                selectedChapter = availableChapters[0] ? availableChapters[0].name : "";
+                renderAll();
+            };
+            sectionList.appendChild(link);
+
+            // Mobile Dropdown Option
+            const option = document.createElement('option');
+            option.value = sec;
+            option.textContent = sec;
+            if (sec === selectedSection) {
+                option.selected = true;
+            }
+            sectionSelect.appendChild(option);
+        });
     }
 
     function renderChapterList() {
@@ -246,53 +313,56 @@
         chapterList.innerHTML = '';
         chapterSelect.innerHTML = '';
 
-        chapters.forEach(ch => {
+        const filteredChapters = chapters.filter(ch => ch.section === selectedSection);
+
+        filteredChapters.forEach(chObj => {
             // Desktop Links
             const link = document.createElement('a');
-            link.textContent = ch;
+            link.textContent = chObj.name;
             link.href = '#';
-            link.className = `chapter-item ${ch === selectedChapter ? 'active' : ''}`;
+            link.className = `list-item ${chObj.name === selectedChapter ? 'active' : ''}`;
             link.onclick = (e) => {
                 e.preventDefault();
-                selectedChapter = ch;
+                selectedChapter = chObj.name;
                 renderAll();
             };
             chapterList.appendChild(link);
 
             // Mobile Dropdown Option
             const option = document.createElement('option');
-            option.value = ch;
-            option.textContent = ch;
-            if (ch === selectedChapter) {
+            option.value = chObj.name;
+            option.textContent = chObj.name;
+            if (chObj.name === selectedChapter) {
                 option.selected = true;
             }
             chapterSelect.appendChild(option);
         });
     }
 
-function renderMainLinks() {
-    linkList.innerHTML = '';
-    document.getElementById('current-chapter-title').textContent = `${selectedChapter}`;
+    function renderMainLinks() {
+        linkList.innerHTML = '';
+        document.getElementById('current-chapter-title').textContent = selectedChapter || "No Chapter Selected";
 
-    const filtered = links.filter(item => item.chapter === selectedChapter);
-    filtered.forEach(item => {
-        const anchor = document.createElement('a');
-        anchor.href = item.url;
-        anchor.textContent = item.text;
-        anchor.target = "_blank";
-        anchor.rel = "noopener noreferrer";
-        if (item.color === 'red') {
-            anchor.style.color = 'red';
-        }
-        linkList.appendChild(anchor);
-    });
-}
+        if (!selectedChapter) return;
+
+        const filtered = links.filter(item => item.chapter === selectedChapter);
+        filtered.forEach(item => {
+            const anchor = document.createElement('a');
+            anchor.href = item.url;
+            anchor.textContent = item.text;
+            anchor.target = "_blank";
+            anchor.rel = "noopener noreferrer";
+            if (item.color === 'red') {
+                anchor.style.color = 'red';
+            }
+            linkList.appendChild(anchor);
+        });
+    }
 
     function updateContainerWidth() {
         const rightContainer = document.querySelector('.right-container');
         if (!rightContainer) return;
 
-        // Skip manual inline sizing on mobile screens
         if (window.innerWidth <= 768) {
             rightContainer.style.minWidth = '';
             return;
