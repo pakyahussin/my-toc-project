@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage TOC Project</title>
+    <title>Manage FCPO TOC Project</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -76,7 +76,7 @@
             font-weight: normal;
         }
 
-        #section-list, #chapter-list {
+        #chapter-list {
             width: 100%;
             display: flex;
             flex-direction: column;
@@ -84,7 +84,7 @@
             gap: 20px;
         }
 
-        #edit-sections-btn, #edit-chapters-btn {
+        #edit-chapters-btn {
             margin-bottom: 20px;
         }
 
@@ -248,7 +248,7 @@
             opacity: 0.5;
             background-color: #e0e0e0;
         }
-        .chapter-select, .section-select, .color-select {
+        .chapter-select, .color-select {
             width: 100%;
             padding: 4px;
             font-size: 14px;
@@ -323,24 +323,17 @@
 <!-- Main App Layout -->
 <div id="admin-app" style="display: none;">
     <div class="header-bar">
-        <span>Logged in as Admin</span>
+        <span>Logged in as Admin (FCPO)</span>
         <button class="logout-btn" id="logout-btn">Log Out</button>
     </div>
 
     <div class="main-layout">
-        <!-- Sections Column -->
-        <div class="content-container">
-            <button id="edit-sections-btn">Manage Sections</button>
-            <h3>Sections</h3>
-            <div id="section-list"></div>
+        <!-- Chapters Column -->
+        <div class="content-container" id="chapters-container">
+            <button id="edit-chapters-btn">Manage Chapters</button>
+            <h3>Chapters</h3>
+            <div id="chapter-list"></div>
         </div>
-
-<!-- Chapters Column -->
-<div class="content-container" id="chapters-container">
-    <button id="edit-chapters-btn">Manage Chapters</button>
-    <h3>Chapters</h3>
-    <div id="chapter-list"></div>
-</div>
 
         <!-- Topics Column -->
         <div class="content-container right-container">
@@ -369,7 +362,6 @@
                         <th>Text</th>
                         <th>Chapter</th>
                         <th>Link color</th>
-                        <th>Format</th>
                         <th style="width: 120px;">Action</th>
                     </tr>
                 </thead>
@@ -399,7 +391,6 @@
                 <thead>
                     <tr>
                         <th>Chapter Name</th>
-                        <th>Section</th>
                         <th style="width: 120px;">Action</th>
                     </tr>
                 </thead>
@@ -409,35 +400,7 @@
 
         <div class="add-form">
             <input type="text" id="new-chapter-name" placeholder="New Chapter Name">
-            <select id="new-chapter-section"></select>
             <button id="add-chapter-btn">Add Chapter</button>
-        </div>
-    </div>
-</div>
-
-<!-- Manage Sections Modal -->
-<div class="modal-overlay" id="section-modal-overlay">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Manage Sections</h3>
-            <button class="close-btn" id="close-section-modal-btn">&times;</button>
-        </div>
-
-        <div class="table-wrapper">
-            <table class="link-table">
-                <thead>
-                    <tr>
-                        <th>Section Name</th>
-                        <th style="width: 120px;">Action</th>
-                    </tr>
-                </thead>
-                <tbody id="section-table-body"></tbody>
-            </table>
-        </div>
-
-        <div class="add-form">
-            <input type="text" id="new-section-name" placeholder="New Section Name">
-            <button id="add-section-btn">Add Section</button>
         </div>
     </div>
 </div>
@@ -497,13 +460,12 @@
             tabManager: persistentMultipleTabManager()
         })
     });
-    const docRef = doc(db, "app_data", "main_state");
+    
+    // FCPO document reference to keep data isolated from stock market data
+    const docRef = doc(db, "app_data", "fcpo_state");
 
-    let sections = ["Miscellaneous"];
-    let chapters = [{ name: "Miscellaneous", section: "Miscellaneous" }];
+    let chapters = ["Miscellaneous"];
     let links = [];
-
-    let selectedSection = "Miscellaneous";
     let selectedChapter = "Miscellaneous";
 
     // --- Authentication Flow ---
@@ -546,7 +508,7 @@
     // --- Save Data ---
     async function saveData() {
         try {
-            await setDoc(docRef, { sections, chapters, links });
+            await setDoc(docRef, { chapters, links });
         } catch (e) {
             console.error("Error writing document to Firebase: ", e);
             alert("Error saving: You may not have write permission.");
@@ -558,24 +520,18 @@
         onSnapshot(docRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                sections = data.sections || ["Miscellaneous"];
                 
-                // Migrate legacy string array chapters if necessary
-                if (data.chapters && typeof data.chapters[0] === 'string') {
-                    chapters = data.chapters.map(ch => ({ name: ch, section: "Miscellaneous" }));
+                // Parse chapters safely
+                if (data.chapters && Array.isArray(data.chapters)) {
+                    chapters = data.chapters.map(ch => typeof ch === 'object' ? ch.name : ch);
                 } else {
-                    chapters = data.chapters || [{ name: "Miscellaneous", section: "Miscellaneous" }];
+                    chapters = ["Miscellaneous"];
                 }
 
                 links = data.links || [];
 
-                if (!sections.includes(selectedSection)) {
-                    selectedSection = sections[0] || "Miscellaneous";
-                }
-
-                const availableChapters = chapters.filter(ch => ch.section === selectedSection);
-                if (!availableChapters.some(ch => ch.name === selectedChapter)) {
-                    selectedChapter = availableChapters[0] ? availableChapters[0].name : "";
+                if (!chapters.includes(selectedChapter)) {
+                    selectedChapter = chapters[0] || "Miscellaneous";
                 }
 
                 renderAll();
@@ -601,40 +557,11 @@
     const chapterTableBody = document.getElementById('chapter-table-body');
     const addChapterBtn = document.getElementById('add-chapter-btn');
 
-    const editSectionsBtn = document.getElementById('edit-sections-btn');
-    const sectionModalOverlay = document.getElementById('section-modal-overlay');
-    const closeSectionModalBtn = document.getElementById('close-section-modal-btn');
-    const sectionTableBody = document.getElementById('section-table-body');
-    const addSectionBtn = document.getElementById('add-section-btn');
-
     function renderAll() {
-        renderSectionList();
         renderChapterList();
         renderMainLinks();
         populateChapterDropdown();
-        populateSectionDropdown();
         updateContainerWidth();
-    }
-
-    // --- Section List Rendering ---
-    function renderSectionList() {
-        const sectionList = document.getElementById('section-list');
-        sectionList.innerHTML = '';
-
-        sections.forEach(sec => {
-            const link = document.createElement('a');
-            link.textContent = sec;
-            link.href = '#';
-            link.className = `list-item ${sec === selectedSection ? 'active' : ''}`;
-            link.onclick = (e) => {
-                e.preventDefault();
-                selectedSection = sec;
-                const availableChapters = chapters.filter(ch => ch.section === selectedSection);
-                selectedChapter = availableChapters[0] ? availableChapters[0].name : "";
-                renderAll();
-            };
-            sectionList.appendChild(link);
-        });
     }
 
     // --- Chapter List Rendering ---
@@ -642,16 +569,14 @@
         const chapterList = document.getElementById('chapter-list');
         chapterList.innerHTML = '';
 
-        const filteredChapters = chapters.filter(ch => ch.section === selectedSection);
-
-        filteredChapters.forEach(chObj => {
+        chapters.forEach(ch => {
             const link = document.createElement('a');
-            link.textContent = chObj.name;
+            link.textContent = ch;
             link.href = '#';
-            link.className = `list-item ${chObj.name === selectedChapter ? 'active' : ''}`;
+            link.className = `list-item ${ch === selectedChapter ? 'active' : ''}`;
             link.onclick = (e) => {
                 e.preventDefault();
-                selectedChapter = chObj.name;
+                selectedChapter = ch;
                 renderAll();
             };
             chapterList.appendChild(link);
@@ -659,61 +584,44 @@
     }
 
     // --- Links/Topics Rendering ---
-function renderMainLinks() {
-    linkList.innerHTML = '';
-    
-    // Updated header text to include "Topics : "
-    const headerText = selectedChapter ? `Topics : ${selectedChapter}` : "No Chapter Selected";
-    document.getElementById('current-chapter-title').textContent = headerText;
+    function renderMainLinks() {
+        linkList.innerHTML = '';
+        
+        const headerText = selectedChapter ? `Topics : ${selectedChapter}` : "No Chapter Selected";
+        document.getElementById('current-chapter-title').textContent = headerText;
 
-    if (!selectedChapter) return;
+        if (!selectedChapter) return;
 
-    const filtered = links.filter(item => item.chapter === selectedChapter);
-    filtered.forEach(item => {
-        const anchor = document.createElement('a');
-        anchor.href = item.url;
-        anchor.textContent = item.text;
-        anchor.target = "_blank";
-        anchor.rel = "noopener noreferrer";
-        if (item.color === 'red') {
-            anchor.style.color = 'red';
-        }
-        linkList.appendChild(anchor);
-    });
-}
+        const filtered = links.filter(item => item.chapter === selectedChapter);
+        filtered.forEach(item => {
+            const anchor = document.createElement('a');
+            anchor.href = item.url;
+            anchor.textContent = item.text;
+            anchor.target = "_blank";
+            anchor.rel = "noopener noreferrer";
+            if (item.color === 'red') {
+                anchor.style.color = 'red';
+            }
+            linkList.appendChild(anchor);
+        });
+    }
 
     function populateChapterDropdown() {
         const dropdown = document.getElementById('new-chapter');
         dropdown.innerHTML = '';
         chapters.forEach(ch => {
             const option = document.createElement('option');
-            option.value = ch.name;
-            option.textContent = `${ch.name} (${ch.section})`;
-            if (ch.name === selectedChapter) option.selected = true;
-            dropdown.appendChild(option);
-        });
-    }
-
-    function populateSectionDropdown() {
-        const dropdown = document.getElementById('new-chapter-section');
-        dropdown.innerHTML = '';
-        sections.forEach(sec => {
-            const option = document.createElement('option');
-            option.value = sec;
-            option.textContent = sec;
-            if (sec === selectedSection) option.selected = true;
+            option.value = ch;
+            option.textContent = ch;
+            if (ch === selectedChapter) option.selected = true;
             dropdown.appendChild(option);
         });
     }
 
     document.getElementById('new-chapter').addEventListener('change', (e) => {
-        const selectedObj = chapters.find(ch => ch.name === e.target.value);
-        if (selectedObj) {
-            selectedSection = selectedObj.section;
-            selectedChapter = selectedObj.name;
-            renderAll();
-            renderModalTable();
-        }
+        selectedChapter = e.target.value;
+        renderAll();
+        renderModalTable();
     });
 
     // --- Drag and Drop Helper ---
@@ -762,40 +670,32 @@ function renderMainLinks() {
             row.dataset.index = displayIndex;
 
             const optionsHTML = chapters.map(ch => 
-                `<option value="${ch.name}" ${ch.name === item.chapter ? 'selected' : ''}>${ch.name}</option>`
+                `<option value="${ch}" ${ch === item.chapter ? 'selected' : ''}>${ch}</option>`
             ).join('');
 
-row.innerHTML = `
-    <td>${item.text}</td>
-    <td>
-        <select class="chapter-select" data-orig-index="${item.originalIndex}">
-            ${optionsHTML}
-        </select>
-    </td>
-    <td>
-        <select class="color-select" data-orig-index="${item.originalIndex}">
-            <option value="blue" ${item.color === 'red' ? '' : 'selected'}>blue</option>
-            <option value="red" ${item.color === 'red' ? 'selected' : ''}>red</option>
-        </select>
-    </td>
-    <td>
-        <select class="format-select" data-orig-index="${item.originalIndex}">
-            <option value="" ${!item.format ? 'selected' : ''}>Unassigned</option>
-            <option value="Video" ${item.format === 'Video' ? 'selected' : ''}>Video</option>
-            <option value="Notes" ${item.format === 'Notes' ? 'selected' : ''}>Notes</option>
-        </select>
-    </td>
-    <td>
-        <button class="edit-btn" data-orig-index="${item.originalIndex}">Edit</button>
-        <button class="delete-btn" data-orig-index="${item.originalIndex}">Delete</button>
-    </td>
-`;
+            row.innerHTML = `
+                <td>${item.text}</td>
+                <td>
+                    <select class="chapter-select" data-orig-index="${item.originalIndex}">
+                        ${optionsHTML}
+                    </select>
+                </td>
+                <td>
+                    <select class="color-select" data-orig-index="${item.originalIndex}">
+                        <option value="blue" ${item.color === 'red' ? '' : 'selected'}>blue</option>
+                        <option value="red" ${item.color === 'red' ? 'selected' : ''}>red</option>
+                    </select>
+                </td>
+                <td>
+                    <button class="edit-btn" data-orig-index="${item.originalIndex}">Edit</button>
+                    <button class="delete-btn" data-orig-index="${item.originalIndex}">Delete</button>
+                </td>
+            `;
 
-// Add listener for format dropdown change
-row.querySelector('.format-select').addEventListener('change', (e) => {
-    links[item.originalIndex].format = e.target.value;
-    saveData();
-});
+            row.querySelector('.color-select').addEventListener('change', (e) => {
+                links[item.originalIndex].color = e.target.value;
+                saveData();
+            });
 
             row.querySelector('.chapter-select').addEventListener('change', (e) => {
                 changeLinkChapter(item.originalIndex, e.target.value);
@@ -819,138 +719,84 @@ row.querySelector('.format-select').addEventListener('change', (e) => {
 
     function changeLinkChapter(index, newChapter) {
         links[index].chapter = newChapter;
-        const targetChapterObj = chapters.find(ch => ch.name === newChapter);
-        if (targetChapterObj) {
-            selectedSection = targetChapterObj.section;
-        }
         selectedChapter = newChapter;
         saveData();
         renderAll();
         renderModalTable();
     }
 
-// --- Manage Chapters Modal Table ---
-function renderChapterModalTable() {
-    chapterTableBody.innerHTML = '';
-    
-    // Filter to only show chapters for the selected section
-    const filteredChapters = chapters.filter(ch => ch.section === selectedSection);
+    // --- Manage Chapters Modal Table ---
+    function renderChapterModalTable() {
+        chapterTableBody.innerHTML = '';
 
-    filteredChapters.forEach((ch) => {
-        // Find the actual index of this chapter in the global chapters array
-        const globalIndex = chapters.findIndex(c => c.name === ch.name);
-
-        const row = document.createElement('tr');
-        row.className = 'draggable';
-        row.draggable = true;
-        row.dataset.index = globalIndex;
-
-        const sectionOptionsHTML = sections.map(sec => 
-            `<option value="${sec}" ${sec === ch.section ? 'selected' : ''}>${sec}</option>`
-        ).join('');
-
-        row.innerHTML = `
-            <td>${ch.name}</td>
-            <td>
-                <select class="section-select" data-idx="${globalIndex}">
-                    ${sectionOptionsHTML}
-                </select>
-            </td>
-            <td>
-                <button class="edit-btn" data-idx="${globalIndex}">Edit</button>
-                <button class="delete-btn" data-ch="${ch.name}">Delete</button>
-            </td>
-        `;
-
-        row.querySelector('.section-select').addEventListener('change', (e) => {
-            chapters[globalIndex].section = e.target.value;
-            saveData();
-            renderAll();
-            renderChapterModalTable(); // Refresh table after moving section
-        });
-
-        row.querySelector('.edit-btn').addEventListener('click', () => editChapter(globalIndex));
-        row.querySelector('.delete-btn').addEventListener('click', () => deleteChapter(ch.name));
-
-        setupDragEvents(row, chapterTableBody, chapters, () => {
-            saveData();
-            renderChapterModalTable();
-        });
-        chapterTableBody.appendChild(row);
-    });
-}
-
-    // --- Manage Sections Modal Table ---
-    function renderSectionModalTable() {
-        sectionTableBody.innerHTML = '';
-        sections.forEach((sec, index) => {
+        chapters.forEach((ch, index) => {
             const row = document.createElement('tr');
             row.className = 'draggable';
             row.draggable = true;
             row.dataset.index = index;
 
             row.innerHTML = `
-                <td>${sec}</td>
+                <td>${ch}</td>
                 <td>
                     <button class="edit-btn" data-idx="${index}">Edit</button>
-                    <button class="delete-btn" data-sec="${sec}">Delete</button>
+                    <button class="delete-btn" data-ch="${ch}">Delete</button>
                 </td>
             `;
 
-            row.querySelector('.edit-btn').addEventListener('click', () => editSection(index));
-            row.querySelector('.delete-btn').addEventListener('click', () => deleteSection(sec));
+            row.querySelector('.edit-btn').addEventListener('click', () => editChapter(index));
+            row.querySelector('.delete-btn').addEventListener('click', () => deleteChapter(ch));
 
-            setupDragEvents(row, sectionTableBody, sections, () => {
+            setupDragEvents(row, chapterTableBody, chapters, () => {
                 saveData();
-                renderSectionModalTable();
+                renderChapterModalTable();
             });
-            sectionTableBody.appendChild(row);
+            chapterTableBody.appendChild(row);
         });
     }
 
-function updateContainerWidth() {
-    const rightContainer = document.querySelector('.right-container');
-    const chaptersContainer = document.getElementById('chapters-container');
+    function updateContainerWidth() {
+        const rightContainer = document.querySelector('.right-container');
+        const chaptersContainer = document.getElementById('chapters-container');
 
-    const measurer = document.createElement('span');
-    measurer.style.visibility = 'hidden';
-    measurer.style.position = 'absolute';
-    measurer.style.whiteSpace = 'nowrap';
-    measurer.style.font = window.getComputedStyle(document.body).font;
-    document.body.appendChild(measurer);
+        const measurer = document.createElement('span');
+        measurer.style.visibility = 'hidden';
+        measurer.style.position = 'absolute';
+        measurer.style.whiteSpace = 'nowrap';
+        measurer.style.font = window.getComputedStyle(document.body).font;
+        document.body.appendChild(measurer);
 
-    // 1. Calculate Topics width
-    if (rightContainer) {
-        if (!links.length) {
-            rightContainer.style.minWidth = '';
-        } else {
-            let maxTopicWidth = 0;
-            links.forEach(item => {
-                measurer.textContent = item.text;
-                const width = measurer.getBoundingClientRect().width;
-                if (width > maxTopicWidth) maxTopicWidth = width;
-            });
-            rightContainer.style.minWidth = `${Math.ceil(maxTopicWidth) + 60}px`;
+        // Calculate Topics width
+        if (rightContainer) {
+            if (!links.length) {
+                rightContainer.style.minWidth = '';
+            } else {
+                let maxTopicWidth = 0;
+                links.forEach(item => {
+                    measurer.textContent = item.text;
+                    const width = measurer.getBoundingClientRect().width;
+                    if (width > maxTopicWidth) maxTopicWidth = width;
+                });
+                rightContainer.style.minWidth = `${Math.ceil(maxTopicWidth) + 60}px`;
+            }
         }
-    }
 
-    // 2. Calculate Chapters width
-    if (chaptersContainer) {
-        if (!chapters.length) {
-            chaptersContainer.style.minWidth = '';
-        } else {
-            let maxChapterWidth = 0;
-            chapters.forEach(ch => {
-                measurer.textContent = ch.name;
-                const width = measurer.getBoundingClientRect().width;
-                if (width > maxChapterWidth) maxChapterWidth = width;
-            });
-            chaptersContainer.style.minWidth = `${Math.ceil(maxChapterWidth) + 60}px`;
+        // Calculate Chapters width
+        if (chaptersContainer) {
+            if (!chapters.length) {
+                chaptersContainer.style.minWidth = '';
+            } else {
+                let maxChapterWidth = 0;
+                chapters.forEach(ch => {
+                    measurer.textContent = ch;
+                    const width = measurer.getBoundingClientRect().width;
+                    if (width > maxChapterWidth) maxChapterWidth = width;
+                });
+                chaptersContainer.style.minWidth = `${Math.ceil(maxChapterWidth) + 60}px`;
+            }
         }
-    }
 
-    document.body.removeChild(measurer);
-}
+        document.body.removeChild(measurer);
+    }
 
     // --- Action Handlers ---
     addLinkBtn.addEventListener('click', () => {
@@ -975,43 +821,30 @@ function updateContainerWidth() {
     window.addEventListener('click', (event) => {
         if (event.target === modalOverlay) modalOverlay.style.display = 'none';
         if (event.target === chapterModalOverlay) chapterModalOverlay.style.display = 'none';
-        if (event.target === sectionModalOverlay) sectionModalOverlay.style.display = 'none';
     });
 
-function editLink(index) {
-    const item = links[index];
-    const newText = prompt("Edit display text:", item.text);
-    if (newText === null) return;
+    function editLink(index) {
+        const item = links[index];
+        const newText = prompt("Edit display text:", item.text);
+        if (newText === null) return;
 
-    let newUrl = prompt("Edit URL:", item.url);
-    if (newUrl === null) return;
+        let newUrl = prompt("Edit URL:", item.url);
+        if (newUrl === null) return;
 
-    if (newUrl && !/^https?:\/\//i.test(newUrl)) newUrl = 'https://' + newUrl;
+        if (newUrl && !/^https?:\/\//i.test(newUrl)) newUrl = 'https://' + newUrl;
 
-    const availableNames = chapters.map(c => c.name);
-    const newChapter = prompt(`Enter chapter name:\nOptions: ${availableNames.join(", ")}`, item.chapter);
-    const newColor = prompt("Enter link color (blue or red):", item.color || "blue");
-    
-    // ADD THIS:
-    const newFormat = prompt("Enter format (Video, Notes, or leave blank):", item.format || "");
+        const newChapter = prompt(`Enter chapter name:\nOptions: ${chapters.join(", ")}`, item.chapter);
+        const newColor = prompt("Enter link color (blue or red):", item.color || "blue");
 
-    if (newText.trim() && newUrl.trim() && availableNames.includes(newChapter)) {
-        const colorVal = (newColor && newColor.trim().toLowerCase() === 'red') ? 'red' : 'blue';
-        
-        // UPDATE THIS OBJECT TO INCLUDE format:
-        links[index] = { 
-            text: newText.trim(), 
-            url: newUrl.trim(), 
-            chapter: newChapter, 
-            color: colorVal,
-            format: newFormat ? newFormat.trim() : ""
-        };
-        saveData();
-        renderModalTable();
-    } else if (newChapter && !availableNames.includes(newChapter)) {
-        alert("Specified chapter does not exist.");
+        if (newText.trim() && newUrl.trim() && chapters.includes(newChapter)) {
+            const colorVal = (newColor && newColor.trim().toLowerCase() === 'red') ? 'red' : 'blue';
+            links[index] = { text: newText.trim(), url: newUrl.trim(), chapter: newChapter, color: colorVal };
+            saveData();
+            renderModalTable();
+        } else if (newChapter && !chapters.includes(newChapter)) {
+            alert("Specified chapter does not exist.");
+        }
     }
-}
 
     function deleteLink(index) {
         links.splice(index, 1);
@@ -1022,32 +855,31 @@ function editLink(index) {
     addChapterBtn.addEventListener('click', () => {
         const nameInput = document.getElementById('new-chapter-name');
         const name = nameInput.value.trim();
-        const section = document.getElementById('new-chapter-section').value;
 
         if (!name) return;
-        if (chapters.some(c => c.name === name)) {
+        if (chapters.includes(name)) {
             alert("Chapter already exists!");
             return;
         }
 
-        chapters.push({ name, section });
+        chapters.push(name);
         nameInput.value = '';
         saveData();
         renderChapterModalTable();
     });
 
     function editChapter(index) {
-        const oldName = chapters[index].name;
+        const oldName = chapters[index];
         const newName = prompt("Edit chapter name:", oldName);
         if (!newName || !newName.trim() || newName === oldName) return;
 
         const cleanName = newName.trim();
-        if (chapters.some(c => c.name === cleanName)) {
+        if (chapters.includes(cleanName)) {
             alert("Chapter name already exists.");
             return;
         }
 
-        chapters[index].name = cleanName;
+        chapters[index] = cleanName;
 
         links.forEach(item => {
             if (item.chapter === oldName) item.chapter = cleanName;
@@ -1069,71 +901,12 @@ function editLink(index) {
             if (item.chapter === chapterName) item.chapter = "Miscellaneous";
         });
 
-        chapters = chapters.filter(ch => ch.name !== chapterName);
+        chapters = chapters.filter(ch => ch !== chapterName);
 
         if (selectedChapter === chapterName) selectedChapter = "Miscellaneous";
 
         saveData();
         renderChapterModalTable();
-    }
-
-    // --- Section Management Actions ---
-    addSectionBtn.addEventListener('click', () => {
-        const nameInput = document.getElementById('new-section-name');
-        const name = nameInput.value.trim();
-
-        if (!name) return;
-        if (sections.includes(name)) {
-            alert("Section already exists!");
-            return;
-        }
-
-        sections.push(name);
-        nameInput.value = '';
-        saveData();
-        renderSectionModalTable();
-    });
-
-    function editSection(index) {
-        const oldName = sections[index];
-        const newName = prompt("Edit section name:", oldName);
-        if (!newName || !newName.trim() || newName === oldName) return;
-
-        const cleanName = newName.trim();
-        if (sections.includes(cleanName)) {
-            alert("Section name already exists.");
-            return;
-        }
-
-        sections[index] = cleanName;
-
-        chapters.forEach(ch => {
-            if (ch.section === oldName) ch.section = cleanName;
-        });
-
-        if (selectedSection === oldName) selectedSection = cleanName;
-
-        saveData();
-        renderSectionModalTable();
-    }
-
-    function deleteSection(sectionName) {
-        if (sectionName === "Miscellaneous") {
-            alert("The 'Miscellaneous' section cannot be deleted.");
-            return;
-        }
-
-        // Reassign chapters under this section to "Miscellaneous"
-        chapters.forEach(ch => {
-            if (ch.section === sectionName) ch.section = "Miscellaneous";
-        });
-
-        sections = sections.filter(sec => sec !== sectionName);
-
-        if (selectedSection === sectionName) selectedSection = "Miscellaneous";
-
-        saveData();
-        renderSectionModalTable();
     }
 
     // --- Button Event Listeners ---
@@ -1146,23 +919,14 @@ function editLink(index) {
         modalOverlay.style.display = 'none';
     });
 
-editChaptersBtn.addEventListener('click', () => {
-    document.querySelector('#chapter-modal-overlay .modal-header h3').textContent = `Manage Chapters : ${selectedSection}`;
-    renderChapterModalTable();
-    chapterModalOverlay.style.display = 'flex';
-});
+    editChaptersBtn.addEventListener('click', () => {
+        document.querySelector('#chapter-modal-overlay .modal-header h3').textContent = `Manage Chapters`;
+        renderChapterModalTable();
+        chapterModalOverlay.style.display = 'flex';
+    });
 
     closeChapterModalBtn.addEventListener('click', () => {
         chapterModalOverlay.style.display = 'none';
-    });
-
-    editSectionsBtn.addEventListener('click', () => {
-        renderSectionModalTable();
-        sectionModalOverlay.style.display = 'flex';
-    });
-
-    closeSectionModalBtn.addEventListener('click', () => {
-        sectionModalOverlay.style.display = 'none';
     });
 
     // --- Duplicate Check Logic ---
