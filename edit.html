@@ -350,6 +350,7 @@
                 <tr>
                     <th>Text</th>
                     <th>Chapter</th>
+                    <th>Link color</th>
                     <th style="width: 120px;">Action</th>
                 </tr>
             </thead>
@@ -554,20 +555,23 @@
         });
     }
 
-    function renderMainLinks() {
-        linkList.innerHTML = '';
-        document.getElementById('current-chapter-title').textContent = `${selectedChapter}`;
+function renderMainLinks() {
+    linkList.innerHTML = '';
+    document.getElementById('current-chapter-title').textContent = `${selectedChapter}`;
 
-        const filtered = links.filter(item => item.chapter === selectedChapter);
-        filtered.forEach(item => {
-            const anchor = document.createElement('a');
-            anchor.href = item.url;
-            anchor.textContent = item.text;
-            anchor.target = "_blank";
-            anchor.rel = "noopener noreferrer";
-            linkList.appendChild(anchor);
-        });
-    }
+    const filtered = links.filter(item => item.chapter === selectedChapter);
+    filtered.forEach(item => {
+        const anchor = document.createElement('a');
+        anchor.href = item.url;
+        anchor.textContent = item.text;
+        anchor.target = "_blank";
+        anchor.rel = "noopener noreferrer";
+        if (item.color === 'red') {
+            anchor.style.color = 'red';
+        }
+        linkList.appendChild(anchor);
+    });
+}
 
     function populateChapterDropdown() {
         const dropdown = document.getElementById('new-chapter');
@@ -619,6 +623,11 @@
                     <button class="delete-btn" data-orig-index="${item.originalIndex}">Delete</button>
                 </td>
             `;
+
+            row.querySelector('.color-select').addEventListener('change', (e) => {
+    links[item.originalIndex].color = e.target.value;
+    saveData();
+});
 
             row.querySelector('.chapter-select').addEventListener('change', (e) => {
                 changeLinkChapter(item.originalIndex, e.target.value);
@@ -740,7 +749,7 @@
 
         if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
 
-        links.push({ text, url, chapter });
+        links.push({ text, url, chapter, color: 'blue' });
         newTextInput.value = '';
         newUrlInput.value = '';
         saveData();
@@ -756,26 +765,28 @@
         }
     });
 
-    function editLink(index) {
-        const item = links[index];
-        const newText = prompt("Edit display text:", item.text);
-        if (newText === null) return;
+function editLink(index) {
+    const item = links[index];
+    const newText = prompt("Edit display text:", item.text);
+    if (newText === null) return;
 
-        let newUrl = prompt("Edit URL:", item.url);
-        if (newUrl === null) return;
+    let newUrl = prompt("Edit URL:", item.url);
+    if (newUrl === null) return;
 
-        if (newUrl && !/^https?:\/\//i.test(newUrl)) newUrl = 'https://' + newUrl;
+    if (newUrl && !/^https?:\/\//i.test(newUrl)) newUrl = 'https://' + newUrl;
 
-        const newChapter = prompt(`Enter chapter name:\nOptions: ${chapters.join(", ")}`, item.chapter);
+    const newChapter = prompt(`Enter chapter name:\nOptions: ${chapters.join(", ")}`, item.chapter);
+    const newColor = prompt("Enter link color (blue or red):", item.color || "blue");
 
-        if (newText.trim() && newUrl.trim() && chapters.includes(newChapter)) {
-            links[index] = { text: newText.trim(), url: newUrl.trim(), chapter: newChapter };
-            saveData();
-            renderModalTable();
-        } else if (newChapter && !chapters.includes(newChapter)) {
-            alert("Specified chapter does not exist.");
-        }
+    if (newText.trim() && newUrl.trim() && chapters.includes(newChapter)) {
+        const colorVal = (newColor && newColor.trim().toLowerCase() === 'red') ? 'red' : 'blue';
+        links[index] = { text: newText.trim(), url: newUrl.trim(), chapter: newChapter, color: colorVal };
+        saveData();
+        renderModalTable();
+    } else if (newChapter && !chapters.includes(newChapter)) {
+        alert("Specified chapter does not exist.");
     }
+}
 
     function deleteLink(index) {
         links.splice(index, 1);

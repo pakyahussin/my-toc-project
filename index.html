@@ -270,20 +270,23 @@
         });
     }
 
-    function renderMainLinks() {
-        linkList.innerHTML = '';
-        document.getElementById('current-chapter-title').textContent = `${selectedChapter}`;
+function renderMainLinks() {
+    linkList.innerHTML = '';
+    document.getElementById('current-chapter-title').textContent = `${selectedChapter}`;
 
-        const filtered = links.filter(item => item.chapter === selectedChapter);
-        filtered.forEach(item => {
-            const anchor = document.createElement('a');
-            anchor.href = item.url;
-            anchor.textContent = item.text;
-            anchor.target = "_blank";
-            anchor.rel = "noopener noreferrer";
-            linkList.appendChild(anchor);
-        });
-    }
+    const filtered = links.filter(item => item.chapter === selectedChapter);
+    filtered.forEach(item => {
+        const anchor = document.createElement('a');
+        anchor.href = item.url;
+        anchor.textContent = item.text;
+        anchor.target = "_blank";
+        anchor.rel = "noopener noreferrer";
+        if (item.color === 'red') {
+            anchor.style.color = 'red';
+        }
+        linkList.appendChild(anchor);
+    });
+}
 
     function updateContainerWidth() {
         const rightContainer = document.querySelector('.right-container');
