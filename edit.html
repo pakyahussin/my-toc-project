@@ -988,28 +988,13 @@ function editLink(index) {
 
     if (newUrl && !/^https?:\/\//i.test(newUrl)) newUrl = 'https://' + newUrl;
 
-    const availableNames = chapters.map(c => c.name);
-    const newChapter = prompt(`Enter chapter name:\nOptions: ${availableNames.join(", ")}`, item.chapter);
-    const newColor = prompt("Enter link color (blue or red):", item.color || "blue");
-    
-    // ADD THIS:
-    const newFormat = prompt("Enter format (Video, Notes, or leave blank):", item.format || "");
-
-    if (newText.trim() && newUrl.trim() && availableNames.includes(newChapter)) {
-        const colorVal = (newColor && newColor.trim().toLowerCase() === 'red') ? 'red' : 'blue';
-        
-        // UPDATE THIS OBJECT TO INCLUDE format:
-        links[index] = { 
-            text: newText.trim(), 
-            url: newUrl.trim(), 
-            chapter: newChapter, 
-            color: colorVal,
-            format: newFormat ? newFormat.trim() : ""
-        };
+    if (newText.trim() && newUrl.trim()) {
+        links[index].text = newText.trim();
+        links[index].url = newUrl.trim();
         saveData();
         renderModalTable();
-    } else if (newChapter && !availableNames.includes(newChapter)) {
-        alert("Specified chapter does not exist.");
+    } else {
+        alert("Text and URL cannot be empty.");
     }
 }
 

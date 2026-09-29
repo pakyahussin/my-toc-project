@@ -202,6 +202,42 @@
     display: none;
 }
 
+/* Visited link styling (Purple + Strikethrough) */
+#link-list a.visited {
+    color: purple !important;
+    text-decoration: line-through !important;
+}
+
+/* Stats Section inside Settings Modal */
+.stats-container {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #ddd;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.stats-container strong {
+    font-size: 14px;
+    display: block;
+    margin-bottom: 6px;
+}
+
+.reset-visited-btn {
+    margin-top: 10px;
+    padding: 6px 10px;
+    font-size: 12px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.reset-visited-btn:hover {
+    background-color: #e0e0e0;
+}
+
         /* Mobile Styles */
         @media (max-width: 768px) {
             body {
@@ -309,7 +345,7 @@
     </div>
 </div>
 
-<!-- Settings Modal  -->
+<!-- Settings Modal -->
 <div class="modal-overlay" id="settings-modal-overlay">
     <div class="modal-content">
         <div class="modal-header">
@@ -329,6 +365,20 @@
                 <input type="radio" name="formatFilter" value="Notes">
                 show notes only
             </label>
+        </div>
+
+        <!-- Stats Section -->
+        <div class="stats-container">
+            <strong>Stats</strong>
+            <div id="stats-total">Total links : 0</div>
+            <br>
+            <div id="stats-videos">Videos : 0 ( 0.0 % )</div>
+            <div id="stats-notes">Notes : 0 ( 0.0 % )</div>
+            <div id="stats-unassigned">Unassigned : 0 ( 0.0 % )</div>
+            <br>
+            <div id="stats-visited">Visited : 0 ( 0.0 % )</div>
+            <div id="stats-unvisited">Unvisited : 0 ( 0.0 % )</div>
+            <button id="reset-visited-btn" class="reset-visited-btn">Reset all visited links</button>
         </div>
     </div>
 </div>
@@ -454,6 +504,7 @@ if (settingsBtnMobile) {
         renderChapterList();
         renderMainLinks();
         updateContainerWidth();
+        renderStats();
     }
 
 // Helper to get visible topics based on format filter
@@ -560,6 +611,69 @@ function renderChapterList() {
     });
 }
 
+// LocalStorage helpers for visited links
+function getVisitedLinks() {
+    return JSON.parse(localStorage.getItem('visited_links') || '[]');
+}
+
+function markAsVisited(url) {
+    const visited = getVisitedLinks();
+    if (!visited.includes(url)) {
+        visited.push(url);
+        localStorage.setItem('visited_links', JSON.stringify(visited));
+    }
+}
+
+function resetVisitedLinks() {
+    localStorage.removeItem('visited_links');
+    renderAll();
+}
+
+// Render Stats
+function renderStats() {
+    const total = links.length;
+    
+    let videos = 0;
+    let notes = 0;
+    let unassigned = 0;
+
+    links.forEach(item => {
+        if (item.format === 'Video') {
+            videos++;
+        } else if (item.format === 'Notes') {
+            notes++;
+        } else {
+            unassigned++;
+        }
+    });
+
+    const visitedList = getVisitedLinks();
+    let visitedCount = 0;
+
+    links.forEach(item => {
+        if (visitedList.includes(item.url)) {
+            visitedCount++;
+        }
+    });
+
+    const unvisitedCount = total - visitedCount;
+
+    const calcPct = (count) => total > 0 ? ((count / total) * 100).toFixed(1) : "0.0";
+
+    document.getElementById('stats-total').textContent = `Total links : ${total}`;
+    document.getElementById('stats-videos').textContent = `Videos : ${videos} ( ${calcPct(videos)} % )`;
+    document.getElementById('stats-notes').textContent = `Notes : ${notes} ( ${calcPct(notes)} % )`;
+    document.getElementById('stats-unassigned').textContent = `Unassigned : ${unassigned} ( ${calcPct(unassigned)} % )`;
+    document.getElementById('stats-visited').textContent = `Visited : ${visitedCount} ( ${calcPct(visitedCount)} % )`;
+    document.getElementById('stats-unvisited').textContent = `Unvisited : ${unvisitedCount} ( ${calcPct(unvisitedCount)} % )`;
+}
+
+// Attach Reset Button Listener
+document.getElementById('reset-visited-btn').addEventListener('click', () => {
+    resetVisitedLinks();
+});
+
+// Update renderMainLinks to handle click tracking and styling
 function renderMainLinks() {
     linkList.innerHTML = '';
     
@@ -570,10 +684,11 @@ function renderMainLinks() {
 
     let filtered = links.filter(item => item.chapter === selectedChapter);
 
-    // Apply Format Filter
     if (selectedFilter !== 'all') {
         filtered = filtered.filter(item => item.format === selectedFilter);
     }
+
+    const visitedSet = new Set(getVisitedLinks());
 
     filtered.forEach(item => {
         const anchor = document.createElement('a');
@@ -581,9 +696,22 @@ function renderMainLinks() {
         anchor.textContent = item.text;
         anchor.target = "_blank";
         anchor.rel = "noopener noreferrer";
-        if (item.color === 'red') {
+        
+        // Check visited status first (highest priority)
+        if (visitedSet.has(item.url)) {
+            anchor.classList.add('visited');
+        } else if (item.color === 'red') {
             anchor.style.color = 'red';
         }
+
+        // Track click locally
+        anchor.addEventListener('click', () => {
+            markAsVisited(item.url);
+            anchor.classList.add('visited');
+            anchor.style.color = ''; // reset inline style so CSS visited color takes precedence
+            renderStats();
+        });
+
         linkList.appendChild(anchor);
     });
 }
