@@ -110,7 +110,7 @@
 
         /* Settings Button & Modal Styles */
 .settings-btn {
-    margin-top: auto;
+    margin-top: 60px;
     padding: 6px 12px;
     font-size: 13px;
     background-color: #f0f0f0;
@@ -399,67 +399,109 @@ filterRadioButtons.forEach(radio => {
         updateContainerWidth();
     }
 
-    function renderSectionList() {
-        const sectionList = document.getElementById('section-list');
-        sectionList.innerHTML = '';
-        sectionSelect.innerHTML = '';
+// Helper to get visible topics based on format filter
+function getFilteredTopics() {
+    if (selectedFilter === 'all') return links;
+    return links.filter(item => item.format === selectedFilter);
+}
 
-        sections.forEach(sec => {
-            // Desktop Links
-            const link = document.createElement('a');
-            link.textContent = sec;
-            link.href = '#';
-            link.className = `list-item ${sec === selectedSection ? 'active' : ''}`;
-            link.onclick = (e) => {
-                e.preventDefault();
-                selectedSection = sec;
-                const availableChapters = chapters.filter(ch => ch.section === selectedSection);
-                selectedChapter = availableChapters[0] ? availableChapters[0].name : "";
-                renderAll();
-            };
-            sectionList.appendChild(link);
+// Update radio button listener to re-evaluate available sections/chapters when filter changes
+filterRadioButtons.forEach(radio => {
+    radio.addEventListener('change', (e) => {
+        selectedFilter = e.target.value;
+        
+        // Re-validate current selections against visible topics
+        const activeTopics = getFilteredTopics();
+        const availableChapters = chapters.filter(ch => 
+            activeTopics.some(link => link.chapter === ch.name)
+        );
+        
+        if (!availableChapters.some(ch => ch.name === selectedChapter)) {
+            selectedChapter = availableChapters[0] ? availableChapters[0].name : "";
+        }
+        
+        if (selectedChapter) {
+            const currentChObj = chapters.find(ch => ch.name === selectedChapter);
+            if (currentChObj) selectedSection = currentChObj.section;
+        }
 
-            // Mobile Dropdown Option
-            const option = document.createElement('option');
-            option.value = sec;
-            option.textContent = sec;
-            if (sec === selectedSection) {
-                option.selected = true;
-            }
-            sectionSelect.appendChild(option);
-        });
-    }
+        renderAll();
+    });
+});
 
-    function renderChapterList() {
-        const chapterList = document.getElementById('chapter-list');
-        chapterList.innerHTML = '';
-        chapterSelect.innerHTML = '';
+function renderSectionList() {
+    const sectionList = document.getElementById('section-list');
+    sectionList.innerHTML = '';
+    sectionSelect.innerHTML = '';
 
-        const filteredChapters = chapters.filter(ch => ch.section === selectedSection);
+    const activeTopics = getFilteredTopics();
 
-        filteredChapters.forEach(chObj => {
-            // Desktop Links
-            const link = document.createElement('a');
-            link.textContent = chObj.name;
-            link.href = '#';
-            link.className = `list-item ${chObj.name === selectedChapter ? 'active' : ''}`;
-            link.onclick = (e) => {
-                e.preventDefault();
-                selectedChapter = chObj.name;
-                renderAll();
-            };
-            chapterList.appendChild(link);
+    // Filter sections to only those having chapters with matching topics
+    const visibleSections = sections.filter(sec => {
+        const secChapters = chapters.filter(ch => ch.section === sec);
+        return secChapters.some(ch => activeTopics.some(link => link.chapter === ch.name));
+    });
 
-            // Mobile Dropdown Option
-            const option = document.createElement('option');
-            option.value = chObj.name;
-            option.textContent = chObj.name;
-            if (chObj.name === selectedChapter) {
-                option.selected = true;
-            }
-            chapterSelect.appendChild(option);
-        });
-    }
+    visibleSections.forEach(sec => {
+        // Desktop Links
+        const link = document.createElement('a');
+        link.textContent = sec;
+        link.href = '#';
+        link.className = `list-item ${sec === selectedSection ? 'active' : ''}`;
+        link.onclick = (e) => {
+            e.preventDefault();
+            selectedSection = sec;
+
+            const visibleChs = chapters.filter(ch => 
+                ch.section === selectedSection && activeTopics.some(link => link.chapter === ch.name)
+            );
+            selectedChapter = visibleChs[0] ? visibleChs[0].name : "";
+            renderAll();
+        };
+        sectionList.appendChild(link);
+
+        // Mobile Dropdown Option
+        const option = document.createElement('option');
+        option.value = sec;
+        option.textContent = sec;
+        if (sec === selectedSection) option.selected = true;
+        sectionSelect.appendChild(option);
+    });
+}
+
+function renderChapterList() {
+    const chapterList = document.getElementById('chapter-list');
+    chapterList.innerHTML = '';
+    chapterSelect.innerHTML = '';
+
+    const activeTopics = getFilteredTopics();
+
+    // Filter chapters under current section that have matching topics
+    const visibleChapters = chapters.filter(ch => 
+        ch.section === selectedSection && activeTopics.some(link => link.chapter === ch.name)
+    );
+
+    visibleChapters.forEach(chObj => {
+        // Desktop Links
+        const link = document.createElement('a');
+        link.textContent = chObj.name;
+        link.href = '#';
+        link.className = `list-item ${chObj.name === selectedChapter ? 'active' : ''}`;
+        link.onclick = (e) => {
+            e.preventDefault();
+            selectedChapter = chObj.name;
+            renderAll();
+        };
+        chapterList.appendChild(link);
+
+        // Mobile Dropdown Option
+        const option = document.createElement('option');
+        option.value = chObj.name;
+        option.textContent = chObj.name;
+        if (chObj.name === selectedChapter) option.selected = true;
+        chapterSelect.appendChild(option);
+    });
+}
 
 function renderMainLinks() {
     linkList.innerHTML = '';
