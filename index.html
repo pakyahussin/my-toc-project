@@ -859,7 +859,6 @@ function updateContainerWidth() {
 }
 
 async function trackVisitor() {
-    // Ensure db is available
     if (typeof db === 'undefined') return;
 
     // 1. Bot & Crawler Detection
@@ -895,33 +894,38 @@ async function trackVisitor() {
     });
     const mytDateStr = formatter.format(now); 
 
+    // Prevent double-tracking on the same client during the same session
+    const sessionKey = `pn_tracked_${mytDateStr}`;
+    if (sessionStorage.getItem(sessionKey)) return;
+
     const dailyDocRef = doc(db, "analytics_daily", mytDateStr);
 
     try {
-        const docSnap = await getDoc(dailyDocRef);
-
-        if (!docSnap.exists()) {
-            await setDoc(dailyDocRef, {
-                dateStr: mytDateStr,
-                timestamp: Date.now(),
-                unique_visitors: [visitorId],
-                desktop: deviceType === 'desktop' ? 1 : 0,
-                phone: deviceType === 'phone' ? 1 : 0,
-                tablet: deviceType === 'tablet' ? 1 : 0
-            });
-        } else {
-            const data = docSnap.data();
-            const existingVisitors = data.unique_visitors || [];
-
-            if (!existingVisitors.includes(visitorId)) {
-                await updateDoc(dailyDocRef, {
-                    unique_visitors: arrayUnion(visitorId),
-                    [deviceType]: increment(1)
-                });
-            }
-        }
+        // First try to safely update existing document
+        await updateDoc(dailyDocRef, {
+            unique_visitors: arrayUnion(visitorId),
+            [deviceType]: increment(1)
+        });
+        sessionStorage.setItem(sessionKey, 'true');
     } catch (err) {
-        console.error("Analytics tracking error:", err);
+        // If document doesn't exist yet, create it with initial counts
+        if (err.code === 'not-found') {
+            try {
+                await setDoc(dailyDocRef, {
+                    dateStr: mytDateStr,
+                    timestamp: Date.now(),
+                    unique_visitors: [visitorId],
+                    desktop: deviceType === 'desktop' ? 1 : 0,
+                    phone: deviceType === 'phone' ? 1 : 0,
+                    tablet: deviceType === 'tablet' ? 1 : 0
+                }, { merge: true });
+                sessionStorage.setItem(sessionKey, 'true');
+            } catch (createErr) {
+                console.error("Error creating analytics document:", createErr);
+            }
+        } else {
+            console.error("Analytics tracking error:", err);
+        }
     }
 }
 
