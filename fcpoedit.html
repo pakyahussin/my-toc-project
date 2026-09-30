@@ -71,9 +71,9 @@
         }
 
         .list-item.active {
-            color: red;
+            color: #0000ee;
             text-decoration: underline;
-            font-weight: normal;
+            font-weight: bold;
         }
 
         #chapter-list {
@@ -82,6 +82,17 @@
             flex-direction: column;
             align-items: flex-start;
             gap: 20px;
+        }
+
+        .dropdown-select {
+            display: none;
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            color: #333;
         }
 
         #edit-chapters-btn {
@@ -118,6 +129,49 @@
             text-decoration: underline;
         }
 
+        /* Visited link styling (Purple + Strikethrough) */
+        #link-list a.visited {
+            color: purple !important;
+            text-decoration: line-through !important;
+        }
+
+        /* Stats Button Styles */
+        .stats-btn {
+            margin-top: 60px;
+            padding: 6px 12px;
+            font-size: 13px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .stats-btn:hover {
+            background-color: #e0e0e0;
+        }
+
+        .desktop-only {
+            display: inline-block;
+            margin-top: 60px;
+        }
+
+        .mobile-only {
+            display: none;
+        }
+
+        .chapter-header-row {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .chapter-header-row h3 {
+            margin: 0;
+        }
+
+        /* Modal Styles */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -141,6 +195,11 @@
             max-height: 85vh;
             display: flex;
             flex-direction: column;
+        }
+
+        .stats-modal-content {
+            width: 280px;
+            max-width: 90%;
         }
 
         .table-wrapper {
@@ -248,7 +307,7 @@
             opacity: 0.5;
             background-color: #e0e0e0;
         }
-        .chapter-select, .color-select {
+        .chapter-select {
             width: 100%;
             padding: 4px;
             font-size: 14px;
@@ -257,6 +316,33 @@
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
+        }
+
+        /* Stats Section inside Modal */
+        .stats-container {
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .stats-container strong {
+            font-size: 14px;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .reset-visited-btn {
+            margin-top: 10px;
+            padding: 6px 10px;
+            font-size: 12px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .reset-visited-btn:hover {
+            background-color: #e0e0e0;
         }
 
         /* Auth Form Styles */
@@ -305,6 +391,90 @@
             margin: 0;
             display: none;
         }
+
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+                font-size: 16px;
+            }
+
+            .header-bar {
+                display: none !important;
+            }
+
+            .main-layout {
+                flex-direction: column;
+                width: 100%;
+                gap: 16px;
+            }
+
+            .content-container {
+                width: 100% !important;
+                min-height: auto;
+                padding: 16px;
+            }
+
+            .right-container {
+                min-width: unset !important;
+            }
+
+            #edit-chapters-btn, .button-row {
+                display: none !important;
+            }
+
+            #chapter-list {
+                display: none;
+            }
+
+            .dropdown-select {
+                display: block;
+            }
+
+            #link-list {
+                gap: 12px;
+            }
+
+            #link-list a {
+                font-size: 16px;
+                white-space: normal;
+                word-break: break-word;
+                padding: 10px 12px;
+                background-color: #f8f9fa;
+                border-radius: 6px;
+                border: 1px solid #e2e8f0;
+                width: 100%;
+                box-sizing: border-box;
+                display: block;
+            }
+
+            #link-list a:active {
+                background-color: #e2e8f0;
+            }
+
+            .chapter-header-row {
+                display: flex !important;
+                flex-direction: row !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                width: 100% !important;
+                margin-bottom: 12px;
+            }
+
+            .chapter-header-row h3 {
+                margin: 0 !important;
+            }
+
+            .desktop-only {
+                display: none !important;
+            }
+
+            .mobile-only {
+                display: inline-block !important;
+                margin-top: 0 !important;
+                padding: 5px 12px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -321,7 +491,7 @@
 </div>
 
 <!-- Main App Layout -->
-<div id="admin-app" style="display: none;">
+<div id="admin-app" style="display: none; width: 100%; max-width: 1100px;">
     <div class="header-bar">
         <span>Logged in as Admin (FCPO)</span>
         <button class="logout-btn" id="logout-btn">Log Out</button>
@@ -331,8 +501,13 @@
         <!-- Chapters Column -->
         <div class="content-container" id="chapters-container">
             <button id="edit-chapters-btn">Manage Chapters</button>
-            <h3>Chapters</h3>
+            <div class="chapter-header-row">
+                <h3>Chapters</h3>
+                <button id="stats-btn-mobile" class="stats-btn mobile-only">Stats</button>
+            </div>
+            <select id="chapter-select" class="dropdown-select" aria-label="Select Chapter"></select>
             <div id="chapter-list"></div>
+            <button id="stats-btn-desktop" class="stats-btn desktop-only">Stats</button>
         </div>
 
         <!-- Topics Column -->
@@ -361,7 +536,6 @@
                     <tr>
                         <th>Text</th>
                         <th>Chapter</th>
-                        <th>Link color</th>
                         <th style="width: 120px;">Action</th>
                     </tr>
                 </thead>
@@ -425,6 +599,24 @@
     </div>
 </div>
 
+<!-- Stats Modal -->
+<div class="modal-overlay" id="stats-modal-overlay">
+    <div class="modal-content stats-modal-content">
+        <div class="modal-header">
+            <h3>Stats</h3>
+            <button class="close-btn" id="close-stats-modal-btn">&times;</button>
+        </div>
+        <div class="stats-container">
+            <div id="stats-total">Total links : 0</div>
+            <br>
+            <div id="stats-visited">Visited : 0 ( 0.0 % )</div>
+            <div id="stats-unvisited">Unvisited : 0 ( 0.0 % )</div>
+            <br>
+            <button id="reset-visited-btn" class="reset-visited-btn">Reset all visited links</button>
+        </div>
+    </div>
+</div>
+
 <!-- Firebase SDK Imports & Main Logic -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
@@ -461,7 +653,6 @@
         })
     });
     
-    // FCPO document reference to keep data isolated from stock market data
     const docRef = doc(db, "app_data", "fcpo_state");
 
     let chapters = ["Miscellaneous"];
@@ -521,7 +712,6 @@
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 
-                // Parse chapters safely
                 if (data.chapters && Array.isArray(data.chapters)) {
                     chapters = data.chapters.map(ch => typeof ch === 'object' ? ch.name : ch);
                 } else {
@@ -557,19 +747,33 @@
     const chapterTableBody = document.getElementById('chapter-table-body');
     const addChapterBtn = document.getElementById('add-chapter-btn');
 
+    const chapterSelect = document.getElementById('chapter-select');
+
+    chapterSelect.addEventListener('change', (e) => {
+        selectedChapter = e.target.value;
+        renderAll();
+    });
+
+    window.addEventListener('resize', () => {
+        updateContainerWidth();
+    });
+
     function renderAll() {
         renderChapterList();
         renderMainLinks();
         populateChapterDropdown();
         updateContainerWidth();
+        renderStats();
     }
 
     // --- Chapter List Rendering ---
     function renderChapterList() {
         const chapterList = document.getElementById('chapter-list');
         chapterList.innerHTML = '';
+        chapterSelect.innerHTML = '';
 
         chapters.forEach(ch => {
+            // Desktop Links
             const link = document.createElement('a');
             link.textContent = ch;
             link.href = '#';
@@ -580,7 +784,32 @@
                 renderAll();
             };
             chapterList.appendChild(link);
+
+            // Mobile Dropdown Option
+            const option = document.createElement('option');
+            option.value = ch;
+            option.textContent = ch;
+            if (ch === selectedChapter) option.selected = true;
+            chapterSelect.appendChild(option);
         });
+    }
+
+    // --- LocalStorage helpers for visited links ---
+    function getVisitedLinks() {
+        return JSON.parse(localStorage.getItem('fcpo_visited_links') || '[]');
+    }
+
+    function markAsVisited(url) {
+        const visited = getVisitedLinks();
+        if (!visited.includes(url)) {
+            visited.push(url);
+            localStorage.setItem('fcpo_visited_links', JSON.stringify(visited));
+        }
+    }
+
+    function resetVisitedLinks() {
+        localStorage.removeItem('fcpo_visited_links');
+        renderAll();
     }
 
     // --- Links/Topics Rendering ---
@@ -593,15 +822,25 @@
         if (!selectedChapter) return;
 
         const filtered = links.filter(item => item.chapter === selectedChapter);
+        const visitedSet = new Set(getVisitedLinks());
+
         filtered.forEach(item => {
             const anchor = document.createElement('a');
             anchor.href = item.url;
             anchor.textContent = item.text;
             anchor.target = "_blank";
             anchor.rel = "noopener noreferrer";
-            if (item.color === 'red') {
-                anchor.style.color = 'red';
+
+            if (visitedSet.has(item.url)) {
+                anchor.classList.add('visited');
             }
+
+            anchor.addEventListener('click', () => {
+                markAsVisited(item.url);
+                anchor.classList.add('visited');
+                renderStats();
+            });
+
             linkList.appendChild(anchor);
         });
     }
@@ -681,21 +920,10 @@
                     </select>
                 </td>
                 <td>
-                    <select class="color-select" data-orig-index="${item.originalIndex}">
-                        <option value="blue" ${item.color === 'red' ? '' : 'selected'}>blue</option>
-                        <option value="red" ${item.color === 'red' ? 'selected' : ''}>red</option>
-                    </select>
-                </td>
-                <td>
                     <button class="edit-btn" data-orig-index="${item.originalIndex}">Edit</button>
                     <button class="delete-btn" data-orig-index="${item.originalIndex}">Delete</button>
                 </td>
             `;
-
-            row.querySelector('.color-select').addEventListener('change', (e) => {
-                links[item.originalIndex].color = e.target.value;
-                saveData();
-            });
 
             row.querySelector('.chapter-select').addEventListener('change', (e) => {
                 changeLinkChapter(item.originalIndex, e.target.value);
@@ -757,6 +985,12 @@
     function updateContainerWidth() {
         const rightContainer = document.querySelector('.right-container');
         const chaptersContainer = document.getElementById('chapters-container');
+
+        if (window.innerWidth <= 768) {
+            if (rightContainer) rightContainer.style.minWidth = '';
+            if (chaptersContainer) chaptersContainer.style.minWidth = '';
+            return;
+        }
 
         const measurer = document.createElement('span');
         measurer.style.visibility = 'hidden';
@@ -821,6 +1055,7 @@
     window.addEventListener('click', (event) => {
         if (event.target === modalOverlay) modalOverlay.style.display = 'none';
         if (event.target === chapterModalOverlay) chapterModalOverlay.style.display = 'none';
+        if (event.target === statsModalOverlay) closeStatsModal();
     });
 
     function editLink(index) {
@@ -834,11 +1069,9 @@
         if (newUrl && !/^https?:\/\//i.test(newUrl)) newUrl = 'https://' + newUrl;
 
         const newChapter = prompt(`Enter chapter name:\nOptions: ${chapters.join(", ")}`, item.chapter);
-        const newColor = prompt("Enter link color (blue or red):", item.color || "blue");
 
         if (newText.trim() && newUrl.trim() && chapters.includes(newChapter)) {
-            const colorVal = (newColor && newColor.trim().toLowerCase() === 'red') ? 'red' : 'blue';
-            links[index] = { text: newText.trim(), url: newUrl.trim(), chapter: newChapter, color: colorVal };
+            links[index] = { text: newText.trim(), url: newUrl.trim(), chapter: newChapter, color: 'blue' };
             saveData();
             renderModalTable();
         } else if (newChapter && !chapters.includes(newChapter)) {
@@ -908,6 +1141,59 @@
         saveData();
         renderChapterModalTable();
     }
+
+    // --- Stats Modal Logic ---
+    const statsModalOverlay = document.getElementById('stats-modal-overlay');
+    const closeStatsModalBtn = document.getElementById('close-stats-modal-btn');
+    const statsBtnDesktop = document.getElementById('stats-btn-desktop');
+    const statsBtnMobile = document.getElementById('stats-btn-mobile');
+
+    function openStatsModal() {
+        statsModalOverlay.style.display = 'flex';
+        history.pushState({ modalOpen: true }, '', '#stats');
+    }
+
+    function closeStatsModal() {
+        if (statsModalOverlay.style.display === 'flex') {
+            if (location.hash === '#stats') {
+                history.back();
+            } else {
+                statsModalOverlay.style.display = 'none';
+            }
+        }
+    }
+
+    if (statsBtnDesktop) statsBtnDesktop.addEventListener('click', openStatsModal);
+    if (statsBtnMobile) statsBtnMobile.addEventListener('click', openStatsModal);
+
+    closeStatsModalBtn.addEventListener('click', closeStatsModal);
+
+    window.addEventListener('popstate', () => {
+        statsModalOverlay.style.display = 'none';
+    });
+
+    function renderStats() {
+        const total = links.length;
+        const visitedList = getVisitedLinks();
+        let visitedCount = 0;
+
+        links.forEach(item => {
+            if (visitedList.includes(item.url)) {
+                visitedCount++;
+            }
+        });
+
+        const unvisitedCount = total - visitedCount;
+        const calcPct = (count) => total > 0 ? ((count / total) * 100).toFixed(1) : "0.0";
+
+        document.getElementById('stats-total').textContent = `Total links : ${total}`;
+        document.getElementById('stats-visited').textContent = `Visited : ${visitedCount} ( ${calcPct(visitedCount)} % )`;
+        document.getElementById('stats-unvisited').textContent = `Unvisited : ${unvisitedCount} ( ${calcPct(unvisitedCount)} % )`;
+    }
+
+    document.getElementById('reset-visited-btn').addEventListener('click', () => {
+        resetVisitedLinks();
+    });
 
     // --- Button Event Listeners ---
     editBtn.addEventListener('click', () => {
