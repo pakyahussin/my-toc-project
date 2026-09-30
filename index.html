@@ -238,6 +238,10 @@
         @media (max-width: 768px) {
             body {
                 padding: 12px;
+                font-size: 14px;
+            }
+
+            h3 {
                 font-size: 16px;
             }
 
@@ -261,26 +265,27 @@
                 display: none;
             }
 
-            .dropdown-select {
-                display: block;
-            }
+.dropdown-select {
+    display: block;
+    font-size: 14px; /* Changed from 16px */
+    padding: 6px 10px; /* Reduced padding from 10px for a smaller look */
+}
 
             #link-list {
-                gap: 12px;
+                gap: 24px;
             }
 
-            #link-list a {
-                font-size: 16px;
-                white-space: normal;
-                word-break: break-word;
-                padding: 10px 12px;
-                background-color: #f8f9fa;
-                border-radius: 6px;
-                border: 1px solid #e2e8f0;
-                width: 100%;
-                box-sizing: border-box;
-                display: block;
-            }
+#link-list a {
+    font-size: 14px; /* Changed from 16px */
+    white-space: normal;
+    word-break: break-word;
+    padding: 0; /* Removed box padding */
+    background-color: transparent; /* Removed background color */
+    border: none; /* Removed border */
+    width: 100%;
+    box-sizing: border-box;
+    display: block;
+}
 
             #link-list a:active {
                 background-color: #e2e8f0;
