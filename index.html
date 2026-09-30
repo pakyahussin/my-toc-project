@@ -224,7 +224,7 @@
 }
 
 .reset-visited-btn {
-    margin-top: 10px;
+    margin-top: -20px;
     padding: 6px 10px;
     font-size: 12px;
     background-color: #f0f0f0;
@@ -365,6 +365,13 @@
                 <input type="radio" name="formatFilter" value="Notes">
                 show notes only
             </label>
+
+            <br>
+
+            <label>
+                <input type="checkbox" id="public-posts-only-checkbox">
+                show public posts only
+            </label>
         </div>
 
         <!-- Stats Section -->
@@ -378,7 +385,13 @@
             <br>
             <div id="stats-visited">Visited : 0 ( 0.0 % )</div>
             <div id="stats-unvisited">Unvisited : 0 ( 0.0 % )</div>
+            <br>
             <button id="reset-visited-btn" class="reset-visited-btn">Reset all visited links</button>
+            <br><br>
+            <div id="stats-subs-only">Subs-only posts : 0 ( 0.0 % )</div>
+            <div id="stats-public">Public posts : 0 ( 0.0 % )</div>
+            <br>
+            <a href="https://pakyanotes.com/join" target="_blank" rel="noopener noreferrer">How to subscribe ?</a>
         </div>
     </div>
 </div>
@@ -424,17 +437,44 @@
     const chapterSelect = document.getElementById('chapter-select');
 
     let selectedFilter = 'all'; // 'all', 'Video', or 'Notes'
+let showPublicOnly = false; // default: off
+
+const publicPostsCheckbox = document.getElementById('public-posts-only-checkbox');
+
+publicPostsCheckbox.addEventListener('change', (e) => {
+    showPublicOnly = e.target.checked;
+    
+    // Re-validate current selections against visible topics
+    const activeTopics = getFilteredTopics();
+    const availableChapters = chapters.filter(ch => 
+        activeTopics.some(link => link.chapter === ch.name)
+    );
+    
+    if (!availableChapters.some(ch => ch.name === selectedChapter)) {
+        selectedChapter = availableChapters[0] ? availableChapters[0].name : "";
+    }
+    
+    if (selectedChapter) {
+        const currentChObj = chapters.find(ch => ch.name === selectedChapter);
+        if (currentChObj) selectedSection = currentChObj.section;
+    }
+
+    renderAll();
+});
 
     const settingsModalOverlay = document.getElementById('settings-modal-overlay');
     const closeSettingsModalBtn = document.getElementById('close-settings-modal-btn');
     const filterRadioButtons = document.querySelectorAll('input[name="formatFilter"]');
 
-    sectionSelect.addEventListener('change', (e) => {
-        selectedSection = e.target.value;
-        const availableChapters = chapters.filter(ch => ch.section === selectedSection);
-        selectedChapter = availableChapters[0] ? availableChapters[0].name : "";
-        renderAll();
-    });
+sectionSelect.addEventListener('change', (e) => {
+    selectedSection = e.target.value;
+    const activeTopics = getFilteredTopics();
+    const availableChapters = chapters.filter(ch => 
+        ch.section === selectedSection && activeTopics.some(link => link.chapter === ch.name)
+    );
+    selectedChapter = availableChapters[0] ? availableChapters[0].name : "";
+    renderAll();
+});
 
     chapterSelect.addEventListener('change', (e) => {
         selectedChapter = e.target.value;
@@ -507,10 +547,19 @@ if (settingsBtnMobile) {
         renderStats();
     }
 
-// Helper to get visible topics based on format filter
+// Helper to get visible topics based on format filter AND public posts filter
 function getFilteredTopics() {
-    if (selectedFilter === 'all') return links;
-    return links.filter(item => item.format === selectedFilter);
+    let result = links;
+
+    if (selectedFilter !== 'all') {
+        result = result.filter(item => item.format === selectedFilter);
+    }
+
+    if (showPublicOnly) {
+        result = result.filter(item => item.color === 'red');
+    }
+
+    return result;
 }
 
 // Update radio button listener to re-evaluate available sections/chapters when filter changes
@@ -636,14 +685,24 @@ function renderStats() {
     let videos = 0;
     let notes = 0;
     let unassigned = 0;
+    let publicPosts = 0;
+    let subsOnlyPosts = 0;
 
     links.forEach(item => {
+        // Format calculation
         if (item.format === 'Video') {
             videos++;
         } else if (item.format === 'Notes') {
             notes++;
         } else {
             unassigned++;
+        }
+
+        // Post access type calculation
+        if (item.color === 'red') {
+            publicPosts++;
+        } else {
+            subsOnlyPosts++;
         }
     });
 
@@ -663,9 +722,21 @@ function renderStats() {
     document.getElementById('stats-total').textContent = `Total links : ${total}`;
     document.getElementById('stats-videos').textContent = `Videos : ${videos} ( ${calcPct(videos)} % )`;
     document.getElementById('stats-notes').textContent = `Notes : ${notes} ( ${calcPct(notes)} % )`;
-    document.getElementById('stats-unassigned').textContent = `Unassigned : ${unassigned} ( ${calcPct(unassigned)} % )`;
+    
+    // Conditionally hide Unassigned if count is 0
+    const unassignedElem = document.getElementById('stats-unassigned');
+    if (unassigned === 0) {
+        unassignedElem.style.display = 'none';
+    } else {
+        unassignedElem.style.display = 'block';
+        unassignedElem.textContent = `Unassigned : ${unassigned} ( ${calcPct(unassigned)} % )`;
+    }
+
     document.getElementById('stats-visited').textContent = `Visited : ${visitedCount} ( ${calcPct(visitedCount)} % )`;
     document.getElementById('stats-unvisited').textContent = `Unvisited : ${unvisitedCount} ( ${calcPct(unvisitedCount)} % )`;
+
+    document.getElementById('stats-subs-only').textContent = `Subs-only posts : ${subsOnlyPosts} ( ${calcPct(subsOnlyPosts)} % )`;
+    document.getElementById('stats-public').textContent = `Public posts : ${publicPosts} ( ${calcPct(publicPosts)} % )`;
 }
 
 // Attach Reset Button Listener
@@ -673,7 +744,6 @@ document.getElementById('reset-visited-btn').addEventListener('click', () => {
     resetVisitedLinks();
 });
 
-// Update renderMainLinks to handle click tracking and styling
 function renderMainLinks() {
     linkList.innerHTML = '';
     
@@ -686,6 +756,10 @@ function renderMainLinks() {
 
     if (selectedFilter !== 'all') {
         filtered = filtered.filter(item => item.format === selectedFilter);
+    }
+
+    if (showPublicOnly) {
+        filtered = filtered.filter(item => item.color === 'red');
     }
 
     const visitedSet = new Set(getVisitedLinks());
