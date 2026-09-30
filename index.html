@@ -438,153 +438,48 @@
     const chapterSelect = document.getElementById('chapter-select');
 
     let selectedFilter = 'all'; // 'all', 'Video', or 'Notes'
-let showPublicOnly = false; // default: off
+    let showPublicOnly = false; // default: off
 
-const publicPostsCheckbox = document.getElementById('public-posts-only-checkbox');
-
-publicPostsCheckbox.addEventListener('change', (e) => {
-    showPublicOnly = e.target.checked;
-    
-    // Re-validate current selections against visible topics
-    const activeTopics = getFilteredTopics();
-    const availableChapters = chapters.filter(ch => 
-        activeTopics.some(link => link.chapter === ch.name)
-    );
-    
-    if (!availableChapters.some(ch => ch.name === selectedChapter)) {
-        selectedChapter = availableChapters[0] ? availableChapters[0].name : "";
-    }
-    
-    if (selectedChapter) {
-        const currentChObj = chapters.find(ch => ch.name === selectedChapter);
-        if (currentChObj) selectedSection = currentChObj.section;
-    }
-
-    renderAll();
-});
-
+    const publicPostsCheckbox = document.getElementById('public-posts-only-checkbox');
     const settingsModalOverlay = document.getElementById('settings-modal-overlay');
     const closeSettingsModalBtn = document.getElementById('close-settings-modal-btn');
     const filterRadioButtons = document.querySelectorAll('input[name="formatFilter"]');
 
-sectionSelect.addEventListener('change', (e) => {
-    selectedSection = e.target.value;
-    const activeTopics = getFilteredTopics();
-    const availableChapters = chapters.filter(ch => 
-        ch.section === selectedSection && activeTopics.some(link => link.chapter === ch.name)
-    );
-    selectedChapter = availableChapters[0] ? availableChapters[0].name : "";
-    renderAll();
-});
+    // LocalStorage helpers for Settings & Navigation
+    function saveUserSettings() {
+        localStorage.setItem('format_filter', selectedFilter);
+        localStorage.setItem('show_public_only', JSON.stringify(showPublicOnly));
+    }
 
-    chapterSelect.addEventListener('change', (e) => {
-        selectedChapter = e.target.value;
-        renderAll();
-    });
+    function saveNavigationState() {
+        localStorage.setItem('selected_section', selectedSection);
+        localStorage.setItem('selected_chapter', selectedChapter);
+    }
 
-    window.addEventListener('resize', () => {
-        updateContainerWidth();
-    });
+    function loadSavedSettings() {
+        const savedFilter = localStorage.getItem('format_filter');
+        const savedPublicOnly = localStorage.getItem('show_public_only');
 
-    // Real-time synchronization listener (Read-Only)
-    onSnapshot(docRef, (docSnap) => {
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            sections = data.sections || ["Miscellaneous"];
-            
-            // Backwards compatibility migration for string chapters
-            if (data.chapters && typeof data.chapters[0] === 'string') {
-                chapters = data.chapters.map(ch => ({ name: ch, section: "Miscellaneous" }));
-            } else {
-                chapters = data.chapters || [{ name: "Miscellaneous", section: "Miscellaneous" }];
-            }
-
-            links = data.links || [];
-
-            if (!sections.includes(selectedSection)) {
-                selectedSection = sections[0] || "Miscellaneous";
-            }
-
-            const availableChapters = chapters.filter(ch => ch.section === selectedSection);
-            if (!availableChapters.some(ch => ch.name === selectedChapter)) {
-                selectedChapter = availableChapters[0] ? availableChapters[0].name : "";
-            }
-
-            renderAll();
+        if (savedFilter) {
+            selectedFilter = savedFilter;
+            const radioToSelect = document.querySelector(`input[name="formatFilter"][value="${savedFilter}"]`);
+            if (radioToSelect) radioToSelect.checked = true;
         }
-    });
 
-function closeModal() {
-    if (settingsModalOverlay.style.display === 'flex') {
-        if (location.hash === '#settings') {
-            history.back(); // Pops the history state pushed during openSettingsModal
-        } else {
-            settingsModalOverlay.style.display = 'none';
+        if (savedPublicOnly !== null) {
+            showPublicOnly = JSON.parse(savedPublicOnly);
+            publicPostsCheckbox.checked = showPublicOnly;
         }
     }
-}
 
-// Update close button & click outside listeners to use closeModal
-closeSettingsModalBtn.addEventListener('click', closeModal);
+    // Restore saved settings on load
+    loadSavedSettings();
 
-window.addEventListener('click', (e) => {
-    if (e.target === settingsModalOverlay) {
-        closeModal();
-    }
-});
-
-window.addEventListener('popstate', () => {
-    // Whenever history goes back (via back button OR closeModal), hide overlay
-    settingsModalOverlay.style.display = 'none';
-});
-
-const settingsBtnDesktop = document.getElementById('settings-btn-desktop');
-const settingsBtnMobile = document.getElementById('settings-btn-mobile');
-
-// Open modal on click for either button
-function openSettingsModal() {
-    settingsModalOverlay.style.display = 'flex';
-    // Push state so hitting back button triggers 'popstate' instead of leaving page
-    history.pushState({ modalOpen: true }, '', '#settings');
-}
-
-if (settingsBtnDesktop) {
-    settingsBtnDesktop.addEventListener('click', openSettingsModal);
-}
-
-if (settingsBtnMobile) {
-    settingsBtnMobile.addEventListener('click', openSettingsModal);
-}
-
-    function renderAll() {
-        renderSectionList();
-        renderChapterList();
-        renderMainLinks();
-        updateContainerWidth();
-        renderStats();
-    }
-
-// Helper to get visible topics based on format filter AND public posts filter
-function getFilteredTopics() {
-    let result = links;
-
-    if (selectedFilter !== 'all') {
-        result = result.filter(item => item.format === selectedFilter);
-    }
-
-    if (showPublicOnly) {
-        result = result.filter(item => item.color === 'red');
-    }
-
-    return result;
-}
-
-// Update radio button listener to re-evaluate available sections/chapters when filter changes
-filterRadioButtons.forEach(radio => {
-    radio.addEventListener('change', (e) => {
-        selectedFilter = e.target.value;
+    // Event Listeners with LocalStorage persistence
+    publicPostsCheckbox.addEventListener('change', (e) => {
+        showPublicOnly = e.target.checked;
+        saveUserSettings();
         
-        // Re-validate current selections against visible topics
         const activeTopics = getFilteredTopics();
         const availableChapters = chapters.filter(ch => 
             activeTopics.some(link => link.chapter === ch.name)
@@ -599,339 +494,433 @@ filterRadioButtons.forEach(radio => {
             if (currentChObj) selectedSection = currentChObj.section;
         }
 
+        saveNavigationState();
         renderAll();
     });
-});
 
-function renderSectionList() {
-    const sectionList = document.getElementById('section-list');
-    sectionList.innerHTML = '';
-    sectionSelect.innerHTML = '';
+    filterRadioButtons.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            selectedFilter = e.target.value;
+            saveUserSettings();
+            
+            const activeTopics = getFilteredTopics();
+            const availableChapters = chapters.filter(ch => 
+                activeTopics.some(link => link.chapter === ch.name)
+            );
+            
+            if (!availableChapters.some(ch => ch.name === selectedChapter)) {
+                selectedChapter = availableChapters[0] ? availableChapters[0].name : "";
+            }
+            
+            if (selectedChapter) {
+                const currentChObj = chapters.find(ch => ch.name === selectedChapter);
+                if (currentChObj) selectedSection = currentChObj.section;
+            }
 
-    const activeTopics = getFilteredTopics();
-
-    // Filter sections to only those having chapters with matching topics
-    const visibleSections = sections.filter(sec => {
-        const secChapters = chapters.filter(ch => ch.section === sec);
-        return secChapters.some(ch => activeTopics.some(link => link.chapter === ch.name));
+            saveNavigationState();
+            renderAll();
+        });
     });
 
-    visibleSections.forEach(sec => {
-        // Desktop Links
-        const link = document.createElement('a');
-        link.textContent = sec;
-        link.href = '#';
-        link.className = `list-item ${sec === selectedSection ? 'active' : ''}`;
-        link.onclick = (e) => {
-            e.preventDefault();
-            selectedSection = sec;
+    sectionSelect.addEventListener('change', (e) => {
+        selectedSection = e.target.value;
+        const activeTopics = getFilteredTopics();
+        const availableChapters = chapters.filter(ch => 
+            ch.section === selectedSection && activeTopics.some(link => link.chapter === ch.name)
+        );
+        selectedChapter = availableChapters[0] ? availableChapters[0].name : "";
+        saveNavigationState();
+        renderAll();
+    });
 
-            const visibleChs = chapters.filter(ch => 
+    chapterSelect.addEventListener('change', (e) => {
+        selectedChapter = e.target.value;
+        saveNavigationState();
+        renderAll();
+    });
+
+    window.addEventListener('resize', () => {
+        updateContainerWidth();
+    });
+
+    // Real-time synchronization listener
+    onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            sections = data.sections || ["Miscellaneous"];
+            
+            if (data.chapters && typeof data.chapters[0] === 'string') {
+                chapters = data.chapters.map(ch => ({ name: ch, section: "Miscellaneous" }));
+            } else {
+                chapters = data.chapters || [{ name: "Miscellaneous", section: "Miscellaneous" }];
+            }
+
+            links = data.links || [];
+
+            // Restore saved section & chapter from localStorage
+            const savedSection = localStorage.getItem('selected_section');
+            const savedChapter = localStorage.getItem('selected_chapter');
+
+            if (savedSection) selectedSection = savedSection;
+            if (savedChapter) selectedChapter = savedChapter;
+
+            // Fallback validation against active topics
+            const activeTopics = getFilteredTopics();
+
+            const visibleSections = sections.filter(sec => {
+                const secChapters = chapters.filter(ch => ch.section === sec);
+                return secChapters.some(ch => activeTopics.some(link => link.chapter === ch.name));
+            });
+
+            if (!visibleSections.includes(selectedSection)) {
+                selectedSection = visibleSections[0] || sections[0] || "Miscellaneous";
+            }
+
+            const visibleChapters = chapters.filter(ch => 
                 ch.section === selectedSection && activeTopics.some(link => link.chapter === ch.name)
             );
-            selectedChapter = visibleChs[0] ? visibleChs[0].name : "";
-            renderAll();
-        };
-        sectionList.appendChild(link);
 
-        // Mobile Dropdown Option
-        const option = document.createElement('option');
-        option.value = sec;
-        option.textContent = sec;
-        if (sec === selectedSection) option.selected = true;
-        sectionSelect.appendChild(option);
-    });
-}
-
-function renderChapterList() {
-    const chapterList = document.getElementById('chapter-list');
-    chapterList.innerHTML = '';
-    chapterSelect.innerHTML = '';
-
-    const activeTopics = getFilteredTopics();
-
-    // Filter chapters under current section that have matching topics
-    const visibleChapters = chapters.filter(ch => 
-        ch.section === selectedSection && activeTopics.some(link => link.chapter === ch.name)
-    );
-
-    visibleChapters.forEach(chObj => {
-        // Desktop Links
-        const link = document.createElement('a');
-        link.textContent = chObj.name;
-        link.href = '#';
-        link.className = `list-item ${chObj.name === selectedChapter ? 'active' : ''}`;
-        link.onclick = (e) => {
-            e.preventDefault();
-            selectedChapter = chObj.name;
-            renderAll();
-        };
-        chapterList.appendChild(link);
-
-        // Mobile Dropdown Option
-        const option = document.createElement('option');
-        option.value = chObj.name;
-        option.textContent = chObj.name;
-        if (chObj.name === selectedChapter) option.selected = true;
-        chapterSelect.appendChild(option);
-    });
-}
-
-// LocalStorage helpers for visited links
-function getVisitedLinks() {
-    return JSON.parse(localStorage.getItem('visited_links') || '[]');
-}
-
-function markAsVisited(url) {
-    const visited = getVisitedLinks();
-    if (!visited.includes(url)) {
-        visited.push(url);
-        localStorage.setItem('visited_links', JSON.stringify(visited));
-    }
-}
-
-function resetVisitedLinks() {
-    localStorage.removeItem('visited_links');
-    renderAll();
-}
-
-// Render Stats
-function renderStats() {
-    const total = links.length;
-    
-    let videos = 0;
-    let notes = 0;
-    let unassigned = 0;
-    let publicPosts = 0;
-    let subsOnlyPosts = 0;
-
-    links.forEach(item => {
-        // Format calculation
-        if (item.format === 'Video') {
-            videos++;
-        } else if (item.format === 'Notes') {
-            notes++;
-        } else {
-            unassigned++;
-        }
-
-        // Post access type calculation
-        if (item.color === 'red') {
-            publicPosts++;
-        } else {
-            subsOnlyPosts++;
-        }
-    });
-
-    const visitedList = getVisitedLinks();
-    let visitedCount = 0;
-
-    links.forEach(item => {
-        if (visitedList.includes(item.url)) {
-            visitedCount++;
-        }
-    });
-
-    const unvisitedCount = total - visitedCount;
-
-    const calcPct = (count) => total > 0 ? ((count / total) * 100).toFixed(1) : "0.0";
-
-    document.getElementById('stats-total').textContent = `Total links : ${total}`;
-    document.getElementById('stats-videos').textContent = `Videos : ${videos} ( ${calcPct(videos)} % )`;
-    document.getElementById('stats-notes').textContent = `Notes : ${notes} ( ${calcPct(notes)} % )`;
-    
-    // Conditionally hide Unassigned if count is 0
-    const unassignedElem = document.getElementById('stats-unassigned');
-    if (unassigned === 0) {
-        unassignedElem.style.display = 'none';
-    } else {
-        unassignedElem.style.display = 'block';
-        unassignedElem.textContent = `Unassigned : ${unassigned} ( ${calcPct(unassigned)} % )`;
-    }
-
-    document.getElementById('stats-visited').textContent = `Visited : ${visitedCount} ( ${calcPct(visitedCount)} % )`;
-    document.getElementById('stats-unvisited').textContent = `Unvisited : ${unvisitedCount} ( ${calcPct(unvisitedCount)} % )`;
-
-    document.getElementById('stats-subs-only').textContent = `Subscribers-only posts : ${subsOnlyPosts} ( ${calcPct(subsOnlyPosts)} % )`;
-    document.getElementById('stats-public').textContent = `Public posts : ${publicPosts} ( ${calcPct(publicPosts)} % )`;
-}
-
-// Attach Reset Button Listener
-document.getElementById('reset-visited-btn').addEventListener('click', () => {
-    resetVisitedLinks();
-});
-
-function renderMainLinks() {
-    linkList.innerHTML = '';
-    
-    const headerText = selectedChapter ? `Topics : ${selectedChapter}` : "No Chapter Selected";
-    document.getElementById('current-chapter-title').textContent = headerText;
-
-    if (!selectedChapter) return;
-
-    let filtered = links.filter(item => item.chapter === selectedChapter);
-
-    if (selectedFilter !== 'all') {
-        filtered = filtered.filter(item => item.format === selectedFilter);
-    }
-
-    if (showPublicOnly) {
-        filtered = filtered.filter(item => item.color === 'red');
-    }
-
-    const visitedSet = new Set(getVisitedLinks());
-
-    filtered.forEach(item => {
-        const anchor = document.createElement('a');
-        anchor.href = item.url;
-        anchor.textContent = item.text;
-        anchor.target = "_blank";
-        anchor.rel = "noopener noreferrer";
-        
-        // Check visited status first (highest priority)
-        if (visitedSet.has(item.url)) {
-            anchor.classList.add('visited');
-        } else if (item.color === 'red') {
-            anchor.style.color = 'red';
-        }
-
-        // Track click locally
-        anchor.addEventListener('click', () => {
-            markAsVisited(item.url);
-            anchor.classList.add('visited');
-            anchor.style.color = ''; // reset inline style so CSS visited color takes precedence
-            renderStats();
-        });
-
-        linkList.appendChild(anchor);
-    });
-}
-
-function updateContainerWidth() {
-    const rightContainer = document.querySelector('.right-container');
-    const chaptersContainer = document.getElementById('chapters-container');
-
-    if (window.innerWidth <= 768) {
-        if (rightContainer) rightContainer.style.minWidth = '';
-        if (chaptersContainer) chaptersContainer.style.minWidth = '';
-        return;
-    }
-
-    // Helper measurement span
-    const measurer = document.createElement('span');
-    measurer.style.visibility = 'hidden';
-    measurer.style.position = 'absolute';
-    measurer.style.whiteSpace = 'nowrap';
-    measurer.style.font = window.getComputedStyle(document.body).font;
-    document.body.appendChild(measurer);
-
-    // 1. Calculate Topics width
-    if (rightContainer) {
-        if (!links.length) {
-            rightContainer.style.minWidth = '';
-        } else {
-            let maxTopicWidth = 0;
-            links.forEach(item => {
-                measurer.textContent = item.text;
-                const width = measurer.getBoundingClientRect().width;
-                if (width > maxTopicWidth) maxTopicWidth = width;
-            });
-            rightContainer.style.minWidth = `${Math.ceil(maxTopicWidth) + 60}px`;
-        }
-    }
-
-    // 2. Calculate Chapters width
-    if (chaptersContainer) {
-        if (!chapters.length) {
-            chaptersContainer.style.minWidth = '';
-        } else {
-            let maxChapterWidth = 0;
-            chapters.forEach(ch => {
-                measurer.textContent = ch.name;
-                const width = measurer.getBoundingClientRect().width;
-                if (width > maxChapterWidth) maxChapterWidth = width;
-            });
-            chaptersContainer.style.minWidth = `${Math.ceil(maxChapterWidth) + 60}px`;
-        }
-    }
-
-    document.body.removeChild(measurer);
-}
-
-async function trackVisitor() {
-    if (typeof db === 'undefined') return;
-
-    // 1. Bot & Crawler Detection
-    const isBot = /bot|googlebot|crawler|spider|robot|crawling|headlesschrome|phantomjs/i.test(navigator.userAgent) || navigator.webdriver;
-    if (isBot) return;
-
-    // 2. Identify Device Type
-    const ua = navigator.userAgent;
-    const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
-    const isSmallScreen = window.innerWidth <= 768;
-
-    let deviceType = "desktop";
-    if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) {
-        deviceType = "tablet";
-    } else if (isMobileUA || isSmallScreen) {
-        deviceType = "phone";
-    }
-
-    // 3. Persistent Visitor ID (localStorage)
-    let visitorId = localStorage.getItem('pn_visitor_id');
-    if (!visitorId) {
-        visitorId = 'v_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
-        localStorage.setItem('pn_visitor_id', visitorId);
-    }
-
-    // 4. Determine Date in Malaysia Time (UTC+8)
-    const now = new Date();
-    const formatter = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'Asia/Kuala_Lumpur',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-    });
-    const mytDateStr = formatter.format(now); 
-
-    // Prevent double-tracking on the same client during the same session
-    const sessionKey = `pn_tracked_${mytDateStr}`;
-    if (sessionStorage.getItem(sessionKey)) return;
-
-    const dailyDocRef = doc(db, "analytics_daily", mytDateStr);
-
-    try {
-        // First try to safely update existing document
-        await updateDoc(dailyDocRef, {
-            unique_visitors: arrayUnion(visitorId),
-            [deviceType]: increment(1)
-        });
-        sessionStorage.setItem(sessionKey, 'true');
-    } catch (err) {
-        // If document doesn't exist yet, create it with initial counts
-        if (err.code === 'not-found') {
-            try {
-                await setDoc(dailyDocRef, {
-                    dateStr: mytDateStr,
-                    timestamp: Date.now(),
-                    unique_visitors: [visitorId],
-                    desktop: deviceType === 'desktop' ? 1 : 0,
-                    phone: deviceType === 'phone' ? 1 : 0,
-                    tablet: deviceType === 'tablet' ? 1 : 0
-                }, { merge: true });
-                sessionStorage.setItem(sessionKey, 'true');
-            } catch (createErr) {
-                console.error("Error creating analytics document:", createErr);
+            if (!visibleChapters.some(ch => ch.name === selectedChapter)) {
+                selectedChapter = visibleChapters[0] ? visibleChapters[0].name : "";
             }
-        } else {
-            console.error("Analytics tracking error:", err);
+
+            saveNavigationState();
+            renderAll();
+        }
+    });
+
+    function closeModal() {
+        if (settingsModalOverlay.style.display === 'flex') {
+            if (location.hash === '#settings') {
+                history.back();
+            } else {
+                settingsModalOverlay.style.display = 'none';
+            }
         }
     }
-}
 
-// Trigger tracking on page load
-trackVisitor();
+    closeSettingsModalBtn.addEventListener('click', closeModal);
 
+    window.addEventListener('click', (e) => {
+        if (e.target === settingsModalOverlay) {
+            closeModal();
+        }
+    });
+
+    window.addEventListener('popstate', () => {
+        settingsModalOverlay.style.display = 'none';
+    });
+
+    const settingsBtnDesktop = document.getElementById('settings-btn-desktop');
+    const settingsBtnMobile = document.getElementById('settings-btn-mobile');
+
+    function openSettingsModal() {
+        settingsModalOverlay.style.display = 'flex';
+        history.pushState({ modalOpen: true }, '', '#settings');
+    }
+
+    if (settingsBtnDesktop) settingsBtnDesktop.addEventListener('click', openSettingsModal);
+    if (settingsBtnMobile) settingsBtnMobile.addEventListener('click', openSettingsModal);
+
+    function renderAll() {
+        renderSectionList();
+        renderChapterList();
+        renderMainLinks();
+        updateContainerWidth();
+        renderStats();
+    }
+
+    function getFilteredTopics() {
+        let result = links;
+        if (selectedFilter !== 'all') {
+            result = result.filter(item => item.format === selectedFilter);
+        }
+        if (showPublicOnly) {
+            result = result.filter(item => item.color === 'red');
+        }
+        return result;
+    }
+
+    function renderSectionList() {
+        const sectionList = document.getElementById('section-list');
+        sectionList.innerHTML = '';
+        sectionSelect.innerHTML = '';
+
+        const activeTopics = getFilteredTopics();
+
+        const visibleSections = sections.filter(sec => {
+            const secChapters = chapters.filter(ch => ch.section === sec);
+            return secChapters.some(ch => activeTopics.some(link => link.chapter === ch.name));
+        });
+
+        visibleSections.forEach(sec => {
+            const link = document.createElement('a');
+            link.textContent = sec;
+            link.href = '#';
+            link.className = `list-item ${sec === selectedSection ? 'active' : ''}`;
+            link.onclick = (e) => {
+                e.preventDefault();
+                selectedSection = sec;
+
+                const visibleChs = chapters.filter(ch => 
+                    ch.section === selectedSection && activeTopics.some(link => link.chapter === ch.name)
+                );
+                selectedChapter = visibleChs[0] ? visibleChs[0].name : "";
+                saveNavigationState();
+                renderAll();
+            };
+            sectionList.appendChild(link);
+
+            const option = document.createElement('option');
+            option.value = sec;
+            option.textContent = sec;
+            if (sec === selectedSection) option.selected = true;
+            sectionSelect.appendChild(option);
+        });
+    }
+
+    function renderChapterList() {
+        const chapterList = document.getElementById('chapter-list');
+        chapterList.innerHTML = '';
+        chapterSelect.innerHTML = '';
+
+        const activeTopics = getFilteredTopics();
+
+        const visibleChapters = chapters.filter(ch => 
+            ch.section === selectedSection && activeTopics.some(link => link.chapter === ch.name)
+        );
+
+        visibleChapters.forEach(chObj => {
+            const link = document.createElement('a');
+            link.textContent = chObj.name;
+            link.href = '#';
+            link.className = `list-item ${chObj.name === selectedChapter ? 'active' : ''}`;
+            link.onclick = (e) => {
+                e.preventDefault();
+                selectedChapter = chObj.name;
+                saveNavigationState();
+                renderAll();
+            };
+            chapterList.appendChild(link);
+
+            const option = document.createElement('option');
+            option.value = chObj.name;
+            option.textContent = chObj.name;
+            if (chObj.name === selectedChapter) option.selected = true;
+            chapterSelect.appendChild(option);
+        });
+    }
+
+    function getVisitedLinks() {
+        return JSON.parse(localStorage.getItem('visited_links') || '[]');
+    }
+
+    function markAsVisited(url) {
+        const visited = getVisitedLinks();
+        if (!visited.includes(url)) {
+            visited.push(url);
+            localStorage.setItem('visited_links', JSON.stringify(visited));
+        }
+    }
+
+    function resetVisitedLinks() {
+        localStorage.removeItem('visited_links');
+        renderAll();
+    }
+
+    function renderStats() {
+        const total = links.length;
+        let videos = 0, notes = 0, unassigned = 0, publicPosts = 0, subsOnlyPosts = 0;
+
+        links.forEach(item => {
+            if (item.format === 'Video') videos++;
+            else if (item.format === 'Notes') notes++;
+            else unassigned++;
+
+            if (item.color === 'red') publicPosts++;
+            else subsOnlyPosts++;
+        });
+
+        const visitedList = getVisitedLinks();
+        let visitedCount = 0;
+        links.forEach(item => {
+            if (visitedList.includes(item.url)) visitedCount++;
+        });
+
+        const unvisitedCount = total - visitedCount;
+        const calcPct = (count) => total > 0 ? ((count / total) * 100).toFixed(1) : "0.0";
+
+        document.getElementById('stats-total').textContent = `Total links : ${total}`;
+        document.getElementById('stats-videos').textContent = `Videos : ${videos} ( ${calcPct(videos)} % )`;
+        document.getElementById('stats-notes').textContent = `Notes : ${notes} ( ${calcPct(notes)} % )`;
+        
+        const unassignedElem = document.getElementById('stats-unassigned');
+        if (unassigned === 0) {
+            unassignedElem.style.display = 'none';
+        } else {
+            unassignedElem.style.display = 'block';
+            unassignedElem.textContent = `Unassigned : ${unassigned} ( ${calcPct(unassigned)} % )`;
+        }
+
+        document.getElementById('stats-visited').textContent = `Visited : ${visitedCount} ( ${calcPct(visitedCount)} % )`;
+        document.getElementById('stats-unvisited').textContent = `Unvisited : ${unvisitedCount} ( ${calcPct(unvisitedCount)} % )`;
+        document.getElementById('stats-subs-only').textContent = `Subscribers-only posts : ${subsOnlyPosts} ( ${calcPct(subsOnlyPosts)} % )`;
+        document.getElementById('stats-public').textContent = `Public posts : ${publicPosts} ( ${calcPct(publicPosts)} % )`;
+    }
+
+    document.getElementById('reset-visited-btn').addEventListener('click', resetVisitedLinks);
+
+    function renderMainLinks() {
+        linkList.innerHTML = '';
+        
+        const headerText = selectedChapter ? `Topics : ${selectedChapter}` : "No Chapter Selected";
+        document.getElementById('current-chapter-title').textContent = headerText;
+
+        if (!selectedChapter) return;
+
+        let filtered = links.filter(item => item.chapter === selectedChapter);
+        if (selectedFilter !== 'all') filtered = filtered.filter(item => item.format === selectedFilter);
+        if (showPublicOnly) filtered = filtered.filter(item => item.color === 'red');
+
+        const visitedSet = new Set(getVisitedLinks());
+
+        filtered.forEach(item => {
+            const anchor = document.createElement('a');
+            anchor.href = item.url;
+            anchor.textContent = item.text;
+            anchor.target = "_blank";
+            anchor.rel = "noopener noreferrer";
+            
+            if (visitedSet.has(item.url)) {
+                anchor.classList.add('visited');
+            } else if (item.color === 'red') {
+                anchor.style.color = 'red';
+            }
+
+            anchor.addEventListener('click', () => {
+                markAsVisited(item.url);
+                anchor.classList.add('visited');
+                anchor.style.color = '';
+                renderStats();
+            });
+
+            linkList.appendChild(anchor);
+        });
+    }
+
+    function updateContainerWidth() {
+        const rightContainer = document.querySelector('.right-container');
+        const chaptersContainer = document.getElementById('chapters-container');
+
+        if (window.innerWidth <= 768) {
+            if (rightContainer) rightContainer.style.minWidth = '';
+            if (chaptersContainer) chaptersContainer.style.minWidth = '';
+            return;
+        }
+
+        const measurer = document.createElement('span');
+        measurer.style.visibility = 'hidden';
+        measurer.style.position = 'absolute';
+        measurer.style.whiteSpace = 'nowrap';
+        measurer.style.font = window.getComputedStyle(document.body).font;
+        document.body.appendChild(measurer);
+
+        if (rightContainer) {
+            if (!links.length) {
+                rightContainer.style.minWidth = '';
+            } else {
+                let maxTopicWidth = 0;
+                links.forEach(item => {
+                    measurer.textContent = item.text;
+                    const width = measurer.getBoundingClientRect().width;
+                    if (width > maxTopicWidth) maxTopicWidth = width;
+                });
+                rightContainer.style.minWidth = `${Math.ceil(maxTopicWidth) + 60}px`;
+            }
+        }
+
+        if (chaptersContainer) {
+            if (!chapters.length) {
+                chaptersContainer.style.minWidth = '';
+            } else {
+                let maxChapterWidth = 0;
+                chapters.forEach(ch => {
+                    measurer.textContent = ch.name;
+                    const width = measurer.getBoundingClientRect().width;
+                    if (width > maxChapterWidth) maxChapterWidth = width;
+                });
+                chaptersContainer.style.minWidth = `${Math.ceil(maxChapterWidth) + 60}px`;
+            }
+        }
+
+        document.body.removeChild(measurer);
+    }
+
+    async function trackVisitor() {
+        if (typeof db === 'undefined') return;
+
+        const isBot = /bot|googlebot|crawler|spider|robot|crawling|headlesschrome|phantomjs/i.test(navigator.userAgent) || navigator.webdriver;
+        if (isBot) return;
+
+        const ua = navigator.userAgent;
+        const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+        const isSmallScreen = window.innerWidth <= 768;
+
+        let deviceType = "desktop";
+        if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) {
+            deviceType = "tablet";
+        } else if (isMobileUA || isSmallScreen) {
+            deviceType = "phone";
+        }
+
+        let visitorId = localStorage.getItem('pn_visitor_id');
+        if (!visitorId) {
+            visitorId = 'v_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+            localStorage.setItem('pn_visitor_id', visitorId);
+        }
+
+        const now = new Date();
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Asia/Kuala_Lumpur',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+        const mytDateStr = formatter.format(now); 
+
+        const sessionKey = `pn_tracked_${mytDateStr}`;
+        if (sessionStorage.getItem(sessionKey)) return;
+
+        const dailyDocRef = doc(db, "analytics_daily", mytDateStr);
+
+        try {
+            await updateDoc(dailyDocRef, {
+                unique_visitors: arrayUnion(visitorId),
+                [deviceType]: increment(1)
+            });
+            sessionStorage.setItem(sessionKey, 'true');
+        } catch (err) {
+            if (err.code === 'not-found') {
+                try {
+                    await setDoc(dailyDocRef, {
+                        dateStr: mytDateStr,
+                        timestamp: Date.now(),
+                        unique_visitors: [visitorId],
+                        desktop: deviceType === 'desktop' ? 1 : 0,
+                        phone: deviceType === 'phone' ? 1 : 0,
+                        tablet: deviceType === 'tablet' ? 1 : 0
+                    }, { merge: true });
+                    sessionStorage.setItem(sessionKey, 'true');
+                } catch (createErr) {
+                    console.error("Error creating analytics document:", createErr);
+                }
+            } else {
+                console.error("Analytics tracking error:", err);
+            }
+        }
+    }
+
+    trackVisitor();
 </script>
 </body>
 </html>
