@@ -188,10 +188,6 @@
     margin: 0;
 }
 
-.settings-btn:hover {
-    background-color: #e0e0e0;
-}
-
 /* Desktop default: Show desktop button (60px margin), hide mobile button */
 .desktop-only {
     display: inline-block;
@@ -513,30 +509,46 @@ sectionSelect.addEventListener('change', (e) => {
         }
     });
 
-closeSettingsModalBtn.addEventListener('click', () => {
-    settingsModalOverlay.style.display = 'none';
-});
+function closeModal() {
+    if (settingsModalOverlay.style.display === 'flex') {
+        if (location.hash === '#settings') {
+            history.back(); // Pops the history state pushed during openSettingsModal
+        } else {
+            settingsModalOverlay.style.display = 'none';
+        }
+    }
+}
+
+// Update close button & click outside listeners to use closeModal
+closeSettingsModalBtn.addEventListener('click', closeModal);
 
 window.addEventListener('click', (e) => {
     if (e.target === settingsModalOverlay) {
-        settingsModalOverlay.style.display = 'none';
+        closeModal();
     }
+});
+
+window.addEventListener('popstate', () => {
+    // Whenever history goes back (via back button OR closeModal), hide overlay
+    settingsModalOverlay.style.display = 'none';
 });
 
 const settingsBtnDesktop = document.getElementById('settings-btn-desktop');
 const settingsBtnMobile = document.getElementById('settings-btn-mobile');
 
 // Open modal on click for either button
+function openSettingsModal() {
+    settingsModalOverlay.style.display = 'flex';
+    // Push state so hitting back button triggers 'popstate' instead of leaving page
+    history.pushState({ modalOpen: true }, '', '#settings');
+}
+
 if (settingsBtnDesktop) {
-    settingsBtnDesktop.addEventListener('click', () => {
-        settingsModalOverlay.style.display = 'flex';
-    });
+    settingsBtnDesktop.addEventListener('click', openSettingsModal);
 }
 
 if (settingsBtnMobile) {
-    settingsBtnMobile.addEventListener('click', () => {
-        settingsModalOverlay.style.display = 'flex';
-    });
+    settingsBtnMobile.addEventListener('click', openSettingsModal);
 }
 
     function renderAll() {
