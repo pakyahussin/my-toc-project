@@ -675,9 +675,14 @@ function renderMainLinks() {
         anchor.textContent = item.text;
         anchor.target = "_blank";
         anchor.rel = "noopener noreferrer";
+        
+        // Explicitly apply color choice
         if (item.color === 'red') {
             anchor.style.color = 'red';
+        } else {
+            anchor.style.color = '#0000ee'; // Default blue color
         }
+        
         linkList.appendChild(anchor);
     });
 }
@@ -795,6 +800,13 @@ row.innerHTML = `
 row.querySelector('.format-select').addEventListener('change', (e) => {
     links[item.originalIndex].format = e.target.value;
     saveData();
+});
+
+// Add listener for color dropdown change
+row.querySelector('.color-select').addEventListener('change', (e) => {
+    links[item.originalIndex].color = e.target.value;
+    saveData();
+    renderAll();
 });
 
             row.querySelector('.chapter-select').addEventListener('change', (e) => {
