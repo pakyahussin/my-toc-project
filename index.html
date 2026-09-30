@@ -859,16 +859,22 @@ function updateContainerWidth() {
 }
 
 async function trackVisitor() {
+    // Ensure db is available
+    if (typeof db === 'undefined') return;
+
     // 1. Bot & Crawler Detection
     const isBot = /bot|googlebot|crawler|spider|robot|crawling|headlesschrome|phantomjs/i.test(navigator.userAgent) || navigator.webdriver;
     if (isBot) return;
 
     // 2. Identify Device Type
     const ua = navigator.userAgent;
+    const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+    const isSmallScreen = window.innerWidth <= 768;
+
     let deviceType = "desktop";
     if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) {
         deviceType = "tablet";
-    } else if (/Mobile|iP(hone|od)|Android|BlackBerry|IEMobile|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/i.test(ua)) {
+    } else if (isMobileUA || isSmallScreen) {
         deviceType = "phone";
     }
 
@@ -887,7 +893,6 @@ async function trackVisitor() {
         month: '2-digit',
         day: '2-digit'
     });
-    // Formats as YYYY-MM-DD in MYT
     const mytDateStr = formatter.format(now); 
 
     const dailyDocRef = doc(db, "analytics_daily", mytDateStr);
@@ -896,7 +901,6 @@ async function trackVisitor() {
         const docSnap = await getDoc(dailyDocRef);
 
         if (!docSnap.exists()) {
-            // First visitor of the day creates the document
             await setDoc(dailyDocRef, {
                 dateStr: mytDateStr,
                 timestamp: Date.now(),
@@ -909,7 +913,6 @@ async function trackVisitor() {
             const data = docSnap.data();
             const existingVisitors = data.unique_visitors || [];
 
-            // Only increment count if this visitor ID hasn't been logged today
             if (!existingVisitors.includes(visitorId)) {
                 await updateDoc(dailyDocRef, {
                     unique_visitors: arrayUnion(visitorId),
