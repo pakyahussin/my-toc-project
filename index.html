@@ -400,6 +400,11 @@
         persistentLocalCache, 
         persistentMultipleTabManager, 
         doc, 
+        getDoc, 
+        setDoc, 
+        updateDoc, 
+        arrayUnion, 
+        increment, 
         onSnapshot 
     } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
@@ -852,6 +857,73 @@ function updateContainerWidth() {
 
     document.body.removeChild(measurer);
 }
+
+async function trackVisitor() {
+    // 1. Bot & Crawler Detection
+    const isBot = /bot|googlebot|crawler|spider|robot|crawling|headlesschrome|phantomjs/i.test(navigator.userAgent) || navigator.webdriver;
+    if (isBot) return;
+
+    // 2. Identify Device Type
+    const ua = navigator.userAgent;
+    let deviceType = "desktop";
+    if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) {
+        deviceType = "tablet";
+    } else if (/Mobile|iP(hone|od)|Android|BlackBerry|IEMobile|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/i.test(ua)) {
+        deviceType = "phone";
+    }
+
+    // 3. Persistent Visitor ID (localStorage)
+    let visitorId = localStorage.getItem('pn_visitor_id');
+    if (!visitorId) {
+        visitorId = 'v_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+        localStorage.setItem('pn_visitor_id', visitorId);
+    }
+
+    // 4. Determine Date in Malaysia Time (UTC+8)
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Kuala_Lumpur',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    });
+    // Formats as YYYY-MM-DD in MYT
+    const mytDateStr = formatter.format(now); 
+
+    const dailyDocRef = doc(db, "analytics_daily", mytDateStr);
+
+    try {
+        const docSnap = await getDoc(dailyDocRef);
+
+        if (!docSnap.exists()) {
+            // First visitor of the day creates the document
+            await setDoc(dailyDocRef, {
+                dateStr: mytDateStr,
+                timestamp: Date.now(),
+                unique_visitors: [visitorId],
+                desktop: deviceType === 'desktop' ? 1 : 0,
+                phone: deviceType === 'phone' ? 1 : 0,
+                tablet: deviceType === 'tablet' ? 1 : 0
+            });
+        } else {
+            const data = docSnap.data();
+            const existingVisitors = data.unique_visitors || [];
+
+            // Only increment count if this visitor ID hasn't been logged today
+            if (!existingVisitors.includes(visitorId)) {
+                await updateDoc(dailyDocRef, {
+                    unique_visitors: arrayUnion(visitorId),
+                    [deviceType]: increment(1)
+                });
+            }
+        }
+    } catch (err) {
+        console.error("Analytics tracking error:", err);
+    }
+}
+
+// Trigger tracking on page load
+trackVisitor();
 
 </script>
 </body>
