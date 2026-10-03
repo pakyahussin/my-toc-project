@@ -176,6 +176,47 @@
     font-size: 14px;
 }
 
+.topic-search-container {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.topic-search-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.topic-search-input {
+    flex: 1;
+    padding: 6px 8px;
+    font-size: 13px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.clear-search-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.clear-search-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.clear-search-btn:not(:disabled):hover {
+    background-color: #e0e0e0;
+}
+
 .section-header-row {
     width: 100%;
     display: flex;
@@ -373,6 +414,15 @@
                 <input type="checkbox" id="public-posts-only-checkbox">
                 show public posts only
             </label>
+
+            <!-- SEARCH BOX -->
+    <div class="topic-search-container">
+        <label for="topic-search-input">filter topics :</label>
+        <div class="topic-search-row">
+            <input type="text" id="topic-search-input" class="topic-search-input" placeholder="Type to filter...">
+            <button id="clear-search-btn" class="clear-search-btn" disabled>clear</button>
+        </div>
+    </div>
         </div>
 
         <!-- Stats Section -->
@@ -444,8 +494,11 @@
 
     let selectedFilter = 'all'; // 'all', 'Video', or 'Notes'
     let showPublicOnly = false; // default: off
+    let topicSearchQuery = "";
 
     const publicPostsCheckbox = document.getElementById('public-posts-only-checkbox');
+    const topicSearchInput = document.getElementById('topic-search-input');
+    const clearSearchBtn = document.getElementById('clear-search-btn');
     const settingsModalOverlay = document.getElementById('settings-modal-overlay');
     const closeSettingsModalBtn = document.getElementById('close-settings-modal-btn');
     const filterRadioButtons = document.querySelectorAll('input[name="formatFilter"]');
@@ -454,6 +507,7 @@
     function saveUserSettings() {
         localStorage.setItem('format_filter', selectedFilter);
         localStorage.setItem('show_public_only', JSON.stringify(showPublicOnly));
+        localStorage.setItem('topic_search_query', topicSearchQuery);
     }
 
     function saveNavigationState() {
@@ -461,21 +515,28 @@
         localStorage.setItem('selected_chapter', selectedChapter);
     }
 
-    function loadSavedSettings() {
-        const savedFilter = localStorage.getItem('format_filter');
-        const savedPublicOnly = localStorage.getItem('show_public_only');
+function loadSavedSettings() {
+    const savedFilter = localStorage.getItem('format_filter');
+    const savedPublicOnly = localStorage.getItem('show_public_only');
+    const savedSearchQuery = localStorage.getItem('topic_search_query'); // ✅ Declare variable here
 
-        if (savedFilter) {
-            selectedFilter = savedFilter;
-            const radioToSelect = document.querySelector(`input[name="formatFilter"][value="${savedFilter}"]`);
-            if (radioToSelect) radioToSelect.checked = true;
-        }
-
-        if (savedPublicOnly !== null) {
-            showPublicOnly = JSON.parse(savedPublicOnly);
-            publicPostsCheckbox.checked = showPublicOnly;
-        }
+    if (savedFilter) {
+        selectedFilter = savedFilter;
+        const radioToSelect = document.querySelector(`input[name="formatFilter"][value="${savedFilter}"]`);
+        if (radioToSelect) radioToSelect.checked = true;
     }
+
+    if (savedPublicOnly !== null) {
+        showPublicOnly = JSON.parse(savedPublicOnly);
+        publicPostsCheckbox.checked = showPublicOnly;
+    }
+
+    if (savedSearchQuery !== null) {
+        topicSearchQuery = savedSearchQuery;
+        topicSearchInput.value = topicSearchQuery;
+        clearSearchBtn.disabled = !topicSearchQuery.trim();
+    }
+}
 
     // Restore saved settings on load
     loadSavedSettings();
@@ -594,6 +655,53 @@
         }
     });
 
+    topicSearchInput.addEventListener('input', (e) => {
+    topicSearchQuery = e.target.value;
+    clearSearchBtn.disabled = !topicSearchQuery.trim();
+    saveUserSettings();
+    
+    const activeTopics = getFilteredTopics();
+    const availableChapters = chapters.filter(ch => 
+        activeTopics.some(link => link.chapter === ch.name)
+    );
+    
+    if (!availableChapters.some(ch => ch.name === selectedChapter)) {
+        selectedChapter = availableChapters[0] ? availableChapters[0].name : "";
+    }
+    
+    if (selectedChapter) {
+        const currentChObj = chapters.find(ch => ch.name === selectedChapter);
+        if (currentChObj) selectedSection = currentChObj.section;
+    }
+
+    saveNavigationState();
+    renderAll();
+});
+
+clearSearchBtn.addEventListener('click', () => {
+    topicSearchQuery = "";
+    topicSearchInput.value = "";
+    clearSearchBtn.disabled = true;
+    saveUserSettings();
+
+    const activeTopics = getFilteredTopics();
+    const availableChapters = chapters.filter(ch => 
+        activeTopics.some(link => link.chapter === ch.name)
+    );
+    
+    if (!availableChapters.some(ch => ch.name === selectedChapter)) {
+        selectedChapter = availableChapters[0] ? availableChapters[0].name : "";
+    }
+    
+    if (selectedChapter) {
+        const currentChObj = chapters.find(ch => ch.name === selectedChapter);
+        if (currentChObj) selectedSection = currentChObj.section;
+    }
+
+    saveNavigationState();
+    renderAll();
+});
+
     function closeModal() {
         if (settingsModalOverlay.style.display === 'flex') {
             if (location.hash === '#settings') {
@@ -635,16 +743,28 @@
         renderStats();
     }
 
-    function getFilteredTopics() {
-        let result = links;
-        if (selectedFilter !== 'all') {
-            result = result.filter(item => item.format === selectedFilter);
-        }
-        if (showPublicOnly) {
-            result = result.filter(item => item.color === 'red');
-        }
-        return result;
+function getFilteredTopics() {
+    let result = links;
+
+    if (selectedFilter !== 'all') {
+        result = result.filter(item => item.format === selectedFilter);
     }
+
+    if (showPublicOnly) {
+        result = result.filter(item => item.color === 'red');
+    }
+
+    if (topicSearchQuery.trim() !== '') {
+        const query = topicSearchQuery.toLowerCase().trim();
+        result = result.filter(item => {
+            const topicMatches = item.text && item.text.toLowerCase().includes(query);
+            const chapterMatches = item.chapter && item.chapter.toLowerCase().includes(query);
+            return topicMatches || chapterMatches;
+        });
+    }
+
+    return result;
+}
 
     function renderSectionList() {
         const sectionList = document.getElementById('section-list');
@@ -783,9 +903,7 @@
 
         if (!selectedChapter) return;
 
-        let filtered = links.filter(item => item.chapter === selectedChapter);
-        if (selectedFilter !== 'all') filtered = filtered.filter(item => item.format === selectedFilter);
-        if (showPublicOnly) filtered = filtered.filter(item => item.color === 'red');
+        let filtered = getFilteredTopics().filter(item => item.chapter === selectedChapter);
 
         const visitedSet = new Set(getVisitedLinks());
 
