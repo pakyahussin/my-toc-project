@@ -437,15 +437,38 @@
                 display: none !important;
             }
 
-            #chapter-list {
-                display: none;
-            }
+/* Keep list visible on mobile, displayed inline with natural line wrapping */
+    #chapter-list {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        gap: 6px !important;
+        width: 100%;
+    }
 
-.dropdown-select {
-    display: block;
-    font-size: 14px; /* Changed from 16px */
-    padding: 6px 10px; /* Reduced padding from 10px for a smaller look */
-}
+/* Hide dropdown select element on mobile */
+    .dropdown-select {
+        display: none !important;
+    }
+
+    /* Style horizontal links */
+    #chapter-list .list-item {
+        display: inline-flex !important;
+        align-items: center !important;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    /* Insert black pipe separator between items */
+    #chapter-list .list-item:not(:last-child)::after {
+        content: "|";
+        color: #000000;
+        margin: 0 6px;
+        text-decoration: none !important;
+        font-weight: normal;
+        pointer-events: none;
+    }
 
             #link-list {
                 gap: 24px;
@@ -623,6 +646,7 @@
         </div>
         <div class="stats-container">
             <div id="stats-total">Total links : 0</div>
+            <div id="stats-last-update">Last update : -</div>
             <br>
             <div id="stats-visited">Visited : 0 ( 0.0 % )</div>
             <div id="stats-unvisited">Unvisited : 0 ( 0.0 % )</div>
@@ -673,6 +697,7 @@
     let chapters = ["Miscellaneous"];
     let links = [];
     let selectedChapter = "Miscellaneous";
+    let lastUpdatedTimestamp = null;
 
     // --- Authentication Flow ---
     const loginOverlay = document.getElementById('login-overlay');
@@ -711,21 +736,25 @@
         }
     });
 
-    // --- Save Data ---
-    async function saveData() {
-        try {
-            await setDoc(docRef, { chapters, links });
-        } catch (e) {
-            console.error("Error writing document to Firebase: ", e);
-            alert("Error saving: You may not have write permission.");
+async function saveData(updateTimestamp = false) {
+    try {
+        const payload = { chapters, links };
+        if (updateTimestamp) {
+            payload.last_updated_timestamp = Date.now();
         }
+        await setDoc(docRef, payload, { merge: true });
+    } catch (e) {
+        console.error("Error writing document to Firebase: ", e);
+        alert("Error saving: You may not have write permission.");
     }
+}
 
     // --- Real-Time Sync Listener ---
     function initRealtimeSync() {
         onSnapshot(docRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
+                lastUpdatedTimestamp = data.last_updated_timestamp || null;
                 
                 if (data.chapters && Array.isArray(data.chapters)) {
                     chapters = data.chapters.map(ch => typeof ch === 'object' ? ch.name : ch);
@@ -739,12 +768,24 @@
                     selectedChapter = chapters[0] || "Miscellaneous";
                 }
 
+                // Restore saved chapter from localStorage
+const savedChapter = localStorage.getItem('selected_fcpo_chapter');
+if (savedChapter && chapters.includes(savedChapter)) {
+    selectedChapter = savedChapter;
+} else if (!chapters.includes(selectedChapter)) {
+    selectedChapter = chapters[0] || "Miscellaneous";
+}
+
                 renderAll();
             } else if (!docSnap.metadata.fromCache) {
-                saveData();
+                saveData(true);
             }
         });
     }
+
+    function saveNavigationState() {
+    localStorage.setItem('selected_fcpo_chapter', selectedChapter);
+}
 
     // --- DOM Elements ---
     const editBtn = document.getElementById('edit-btn');
@@ -766,6 +807,7 @@
 
     chapterSelect.addEventListener('change', (e) => {
         selectedChapter = e.target.value;
+        saveNavigationState();
         renderAll();
     });
 
@@ -796,6 +838,7 @@
             link.onclick = (e) => {
                 e.preventDefault();
                 selectedChapter = ch;
+                saveNavigationState();
                 renderAll();
             };
             chapterList.appendChild(link);
@@ -874,6 +917,7 @@
 
     document.getElementById('new-chapter').addEventListener('change', (e) => {
         selectedChapter = e.target.value;
+        saveNavigationState();
         renderAll();
         renderModalTable();
     });
@@ -950,12 +994,27 @@
                 deleteLink(item.originalIndex);
             });
 
-            setupDragEvents(row, modalTableBody, filtered, () => {
-                const otherLinks = links.filter(item => item.chapter !== selectedChapter);
-                links = [...otherLinks, ...filtered.map(({ originalIndex, ...item }) => item)];
-                saveData();
-                renderModalTable();
-            });
+setupDragEvents(row, modalTableBody, filtered, () => {
+    // Determine source and target indices from the spliced filtered array
+    const fromGlobalIdx = filtered[fromIndex]?.originalIndex; // where item moved from
+    
+    // Instead of directly remapping all links, extract filtered order into links:
+    const activeChapterLinks = filtered.map(item => {
+        const { originalIndex, ...cleanItem } = item;
+        return cleanItem;
+    });
+
+    let filterIdx = 0;
+    links = links.map(item => {
+        if (item.chapter === selectedChapter) {
+            return activeChapterLinks[filterIdx++];
+        }
+        return item;
+    });
+
+    saveData(true);
+    renderModalTable();
+});
             modalTableBody.appendChild(row);
         });
     }
@@ -963,7 +1022,8 @@
     function changeLinkChapter(index, newChapter) {
         links[index].chapter = newChapter;
         selectedChapter = newChapter;
-        saveData();
+        saveNavigationState();
+        saveData(true);
         renderAll();
         renderModalTable();
     }
@@ -990,7 +1050,7 @@
             row.querySelector('.delete-btn').addEventListener('click', () => deleteChapter(ch));
 
             setupDragEvents(row, chapterTableBody, chapters, () => {
-                saveData();
+                saveData(true);
                 renderChapterModalTable();
             });
             chapterTableBody.appendChild(row);
@@ -1063,7 +1123,7 @@
         links.push({ text, url, chapter, color: 'blue' });
         newTextInput.value = '';
         newUrlInput.value = '';
-        saveData();
+        saveData(true);
         renderModalTable();
     });
 
@@ -1071,32 +1131,34 @@
         if (event.target === modalOverlay) modalOverlay.style.display = 'none';
         if (event.target === chapterModalOverlay) chapterModalOverlay.style.display = 'none';
         if (event.target === statsModalOverlay) closeStatsModal();
+        if (event.target === duplicateModalOverlay) duplicateModalOverlay.style.display = 'none';
     });
 
-    function editLink(index) {
-        const item = links[index];
-        const newText = prompt("Edit display text:", item.text);
-        if (newText === null) return;
+function editLink(index) {
+    const item = links[index];
+    const newText = prompt("Edit display text:", item.text);
+    if (newText === null) return;
 
-        let newUrl = prompt("Edit URL:", item.url);
-        if (newUrl === null) return;
+    let newUrl = prompt("Edit URL:", item.url);
+    if (newUrl === null) return;
 
-        if (newUrl && !/^https?:\/\//i.test(newUrl)) newUrl = 'https://' + newUrl;
+    if (newUrl && !/^https?:\/\//i.test(newUrl)) newUrl = 'https://' + newUrl;
 
-        const newChapter = prompt(`Enter chapter name:\nOptions: ${chapters.join(", ")}`, item.chapter);
+    const newChapter = prompt(`Enter chapter name:\nOptions: ${chapters.join(", ")}`, item.chapter);
 
-        if (newText.trim() && newUrl.trim() && chapters.includes(newChapter)) {
-            links[index] = { text: newText.trim(), url: newUrl.trim(), chapter: newChapter, color: 'blue' };
-            saveData();
-            renderModalTable();
-        } else if (newChapter && !chapters.includes(newChapter)) {
-            alert("Specified chapter does not exist.");
-        }
+    if (newText.trim() && newUrl.trim() && chapters.includes(newChapter)) {
+        links[index] = { text: newText.trim(), url: newUrl.trim(), chapter: newChapter, color: 'blue' };
+        saveData(true);
+        renderAll(); // Refreshes main view and chapter lists
+        renderModalTable();
+    } else if (newChapter && !chapters.includes(newChapter)) {
+        alert("Specified chapter does not exist.");
     }
+}
 
     function deleteLink(index) {
         links.splice(index, 1);
-        saveData();
+        saveData(true);
         renderModalTable();
     }
 
@@ -1112,7 +1174,7 @@
 
         chapters.push(name);
         nameInput.value = '';
-        saveData();
+        saveData(true);
         renderChapterModalTable();
     });
 
@@ -1135,27 +1197,32 @@
 
         if (selectedChapter === oldName) selectedChapter = cleanName;
 
-        saveData();
+        saveData(true);
         renderChapterModalTable();
     }
 
-    function deleteChapter(chapterName) {
-        if (chapterName === "Miscellaneous") {
-            alert("The 'Miscellaneous' chapter cannot be deleted.");
-            return;
-        }
-
-        links.forEach(item => {
-            if (item.chapter === chapterName) item.chapter = "Miscellaneous";
-        });
-
-        chapters = chapters.filter(ch => ch !== chapterName);
-
-        if (selectedChapter === chapterName) selectedChapter = "Miscellaneous";
-
-        saveData();
-        renderChapterModalTable();
+function deleteChapter(chapterName) {
+    if (chapterName === "Miscellaneous") {
+        alert("The 'Miscellaneous' chapter cannot be deleted.");
+        return;
     }
+
+    // Ensure 'Miscellaneous' exists in chapters array
+    if (!chapters.includes("Miscellaneous")) {
+        chapters.push("Miscellaneous");
+    }
+
+    links.forEach(item => {
+        if (item.chapter === chapterName) item.chapter = "Miscellaneous";
+    });
+
+    chapters = chapters.filter(ch => ch !== chapterName);
+
+    if (selectedChapter === chapterName) selectedChapter = "Miscellaneous";
+
+    saveData(true);
+    renderChapterModalTable();
+}
 
     // --- Stats Modal Logic ---
     const statsModalOverlay = document.getElementById('stats-modal-overlay');
@@ -1187,6 +1254,44 @@
         statsModalOverlay.style.display = 'none';
     });
 
+    function formatLastUpdate(timestamp) {
+    if (!timestamp) return "Last update : Never";
+
+    const date = new Date(timestamp);
+    const day = String(date.getDate()).padStart(2, '0');
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    const timeStr = `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+
+    const now = Date.now();
+    const diffMs = now - timestamp;
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffMonths = Math.floor(diffDays / 30);
+
+    let durationStr = "";
+    if (diffMinutes < 1) {
+        durationStr = "just now";
+    } else if (diffMinutes < 120) {
+        durationStr = `${diffMinutes} minutes ago`;
+    } else if (diffHours <= 48) {
+        durationStr = `${diffHours} hours ago`;
+    } else if (diffDays <= 60) {
+        durationStr = `${diffDays} days ago`;
+    } else {
+        durationStr = `${Math.max(1, diffMonths)} months ago`;
+    }
+
+    return `Last update : ${day} ${month} ${year} , ${timeStr}<br>( ${durationStr} )`;
+}
+
     function renderStats() {
         const total = links.length;
         const visitedList = getVisitedLinks();
@@ -1204,6 +1309,7 @@
         document.getElementById('stats-total').textContent = `Total links : ${total}`;
         document.getElementById('stats-visited').textContent = `Visited : ${visitedCount} ( ${calcPct(visitedCount)} % )`;
         document.getElementById('stats-unvisited').textContent = `Unvisited : ${unvisitedCount} ( ${calcPct(unvisitedCount)} % )`;
+        document.getElementById('stats-last-update').innerHTML = formatLastUpdate(lastUpdatedTimestamp);
     }
 
     document.getElementById('reset-visited-btn').addEventListener('click', () => {
@@ -1268,7 +1374,7 @@
         if (currentGroupIndex >= duplicateGroups.length) {
             duplicateModalOverlay.style.display = 'none';
             alert("All duplicates resolved!");
-            saveData();
+            saveData(true);
             return;
         }
 
@@ -1299,25 +1405,28 @@
         });
     }
 
-    function removeDuplicateItem(localIndex) {
-        const currentGroup = duplicateGroups[currentGroupIndex];
-        const itemToRemove = currentGroup[localIndex];
+function removeDuplicateItem(localIndex) {
+    const currentGroup = duplicateGroups[currentGroupIndex];
+    const itemToRemove = currentGroup[localIndex];
 
-        links.splice(itemToRemove.globalIndex, 1);
+    // Remove from main links array
+    links = links.filter((_, idx) => idx !== itemToRemove.globalIndex);
 
-        duplicateGroups.forEach(group => {
-            group.forEach(item => {
-                if (item.globalIndex > itemToRemove.globalIndex) {
-                    item.globalIndex--;
-                }
-            });
+    // Re-map global indices across all remaining duplicate groups
+    duplicateGroups.forEach(group => {
+        group.forEach(item => {
+            if (item.globalIndex > itemToRemove.globalIndex) {
+                item.globalIndex--;
+            }
         });
+    });
 
-        currentGroup.splice(localIndex, 1);
+    // Remove from current group
+    currentGroup.splice(localIndex, 1);
 
-        saveData();
-        showDuplicateGroupModal();
-    }
+    saveData(true);
+    showDuplicateGroupModal();
+}
 </script>
 </body>
 </html>
