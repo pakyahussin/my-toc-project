@@ -428,9 +428,11 @@
         <!-- Stats Section -->
         <div class="stats-container">
             <strong>Stats</strong>
-            <div id="stats-total">Total links : 0</div>
-            <br>
-            <div id="stats-videos">Videos : 0 ( 0.0 % )</div>
+<div id="stats-total">Total links : 0</div>
+<br>
+<div id="stats-last-update">Last update : -</div>
+<br>
+<div id="stats-videos">Videos : 0 ( 0.0 % )</div>
             <div id="stats-notes">Notes : 0 ( 0.0 % )</div>
             <div id="stats-unassigned">Unassigned : 0 ( 0.0 % )</div>
             <br>
@@ -495,6 +497,7 @@
     let selectedFilter = 'all'; // 'all', 'Video', or 'Notes'
     let showPublicOnly = false; // default: off
     let topicSearchQuery = "";
+    let lastUpdatedTimestamp = null;
 
     const publicPostsCheckbox = document.getElementById('public-posts-only-checkbox');
     const topicSearchInput = document.getElementById('topic-search-input');
@@ -613,6 +616,7 @@ function loadSavedSettings() {
     onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
             const data = docSnap.data();
+            lastUpdatedTimestamp = data.last_updated_timestamp || null;
             sections = data.sections || ["Miscellaneous"];
             
             if (data.chapters && typeof data.chapters[0] === 'string') {
@@ -853,6 +857,44 @@ function getFilteredTopics() {
         renderAll();
     }
 
+    function formatLastUpdate(timestamp) {
+    if (!timestamp) return "Last update : Never";
+
+    const date = new Date(timestamp);
+    const day = String(date.getDate()).padStart(2, '0');
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+
+    let hours = date.getHours();
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    const timeStr = `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+
+    const now = Date.now();
+    const diffMs = now - timestamp;
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffMonths = Math.floor(diffDays / 30);
+
+    let durationStr = "";
+    if (diffMinutes < 1) {
+        durationStr = "just now";
+    } else if (diffMinutes < 120) {
+        durationStr = `${diffMinutes} minutes ago`;
+    } else if (diffHours <= 48) {
+        durationStr = `${diffHours} hours ago`;
+    } else if (diffDays <= 60) {
+        durationStr = `${diffDays} days ago`;
+    } else {
+        durationStr = `${Math.max(1, diffMonths)} months ago`;
+    }
+
+    return `Last update : ${day}-${month}-${year} , ${timeStr} ( ${durationStr} )`;
+}
+
     function renderStats() {
         const total = links.length;
         let videos = 0, notes = 0, unassigned = 0, publicPosts = 0, subsOnlyPosts = 0;
@@ -891,6 +933,7 @@ function getFilteredTopics() {
         document.getElementById('stats-unvisited').textContent = `Unvisited : ${unvisitedCount} ( ${calcPct(unvisitedCount)} % )`;
         document.getElementById('stats-subs-only').textContent = `Subscribers-only posts : ${subsOnlyPosts} ( ${calcPct(subsOnlyPosts)} % )`;
         document.getElementById('stats-public').textContent = `Public posts : ${publicPosts} ( ${calcPct(publicPosts)} % )`;
+        document.getElementById('stats-last-update').textContent = formatLastUpdate(lastUpdatedTimestamp);
     }
 
     document.getElementById('reset-visited-btn').addEventListener('click', resetVisitedLinks);

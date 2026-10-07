@@ -543,15 +543,18 @@
         }
     });
 
-    // --- Save Data ---
-    async function saveData() {
-        try {
-            await setDoc(docRef, { sections, chapters, links });
-        } catch (e) {
-            console.error("Error writing document to Firebase: ", e);
-            alert("Error saving: You may not have write permission.");
+async function saveData(updateTimestamp = false) {
+    try {
+        const payload = { sections, chapters, links };
+        if (updateTimestamp) {
+            payload.last_updated_timestamp = Date.now();
         }
+        await setDoc(docRef, payload, { merge: true });
+    } catch (e) {
+        console.error("Error writing document to Firebase: ", e);
+        alert("Error saving: You may not have write permission.");
     }
+}
 
     // --- Real-Time Sync Listener ---
     function initRealtimeSync() {
@@ -980,7 +983,7 @@ function updateContainerWidth() {
         links.push({ text, url, chapter, color: 'blue' });
         newTextInput.value = '';
         newUrlInput.value = '';
-        saveData();
+        saveData(true);
         renderModalTable();
     });
 
@@ -1012,7 +1015,7 @@ function editLink(index) {
 
     function deleteLink(index) {
         links.splice(index, 1);
-        saveData();
+        saveData(true);
         renderModalTable();
     }
 
@@ -1247,7 +1250,7 @@ editChaptersBtn.addEventListener('click', () => {
 
         currentGroup.splice(localIndex, 1);
 
-        saveData();
+        saveData(true);
         showDuplicateGroupModal();
     }
 </script>
