@@ -142,6 +142,9 @@
     border-radius: 8px;
     width: max-content;
     max-width: 90vw;
+    max-height: 85vh; /* Prevents overflow by leaving 15% vertical space */
+    overflow-y: auto; /* Enables vertical scrolling when content exceeds max-height */
+    box-sizing: border-box; /* Ensures padding is included inside max-height */
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
