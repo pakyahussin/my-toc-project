@@ -802,13 +802,13 @@ row.innerHTML = `
 // Add listener for format dropdown change
 row.querySelector('.format-select').addEventListener('change', (e) => {
     links[item.originalIndex].format = e.target.value;
-    saveData();
+    saveData(true);
 });
 
 // Add listener for color dropdown change
 row.querySelector('.color-select').addEventListener('change', (e) => {
     links[item.originalIndex].color = e.target.value;
-    saveData();
+    saveData(true);
     renderAll();
 });
 
@@ -825,7 +825,7 @@ row.querySelector('.color-select').addEventListener('change', (e) => {
             setupDragEvents(row, modalTableBody, filtered, () => {
                 const otherLinks = links.filter(item => item.chapter !== selectedChapter);
                 links = [...otherLinks, ...filtered.map(({ originalIndex, ...item }) => item)];
-                saveData();
+                saveData(true);
                 renderModalTable();
             });
             modalTableBody.appendChild(row);
@@ -839,7 +839,7 @@ row.querySelector('.color-select').addEventListener('change', (e) => {
             selectedSection = targetChapterObj.section;
         }
         selectedChapter = newChapter;
-        saveData();
+        saveData(true);
         renderAll();
         renderModalTable();
     }
@@ -879,7 +879,7 @@ function renderChapterModalTable() {
 
         row.querySelector('.section-select').addEventListener('change', (e) => {
             chapters[globalIndex].section = e.target.value;
-            saveData();
+            saveData(true);
             renderAll();
             renderChapterModalTable(); // Refresh table after moving section
         });
@@ -888,7 +888,7 @@ function renderChapterModalTable() {
         row.querySelector('.delete-btn').addEventListener('click', () => deleteChapter(ch.name));
 
         setupDragEvents(row, chapterTableBody, chapters, () => {
-            saveData();
+            saveData(true);
             renderChapterModalTable();
         });
         chapterTableBody.appendChild(row);
@@ -916,7 +916,7 @@ function renderChapterModalTable() {
             row.querySelector('.delete-btn').addEventListener('click', () => deleteSection(sec));
 
             setupDragEvents(row, sectionTableBody, sections, () => {
-                saveData();
+                saveData(true);
                 renderSectionModalTable();
             });
             sectionTableBody.appendChild(row);
@@ -1006,7 +1006,7 @@ function editLink(index) {
     if (newText.trim() && newUrl.trim()) {
         links[index].text = newText.trim();
         links[index].url = newUrl.trim();
-        saveData();
+        saveData(true);
         renderModalTable();
     } else {
         alert("Text and URL cannot be empty.");
@@ -1032,7 +1032,7 @@ function editLink(index) {
 
         chapters.push({ name, section });
         nameInput.value = '';
-        saveData();
+        saveData(true);
         renderChapterModalTable();
     });
 
@@ -1055,7 +1055,7 @@ function editLink(index) {
 
         if (selectedChapter === oldName) selectedChapter = cleanName;
 
-        saveData();
+        saveData(true);
         renderChapterModalTable();
     }
 
@@ -1073,7 +1073,7 @@ function editLink(index) {
 
         if (selectedChapter === chapterName) selectedChapter = "Miscellaneous";
 
-        saveData();
+        saveData(true);
         renderChapterModalTable();
     }
 
@@ -1090,7 +1090,7 @@ function editLink(index) {
 
         sections.push(name);
         nameInput.value = '';
-        saveData();
+        saveData(true);
         renderSectionModalTable();
     });
 
@@ -1113,7 +1113,7 @@ function editLink(index) {
 
         if (selectedSection === oldName) selectedSection = cleanName;
 
-        saveData();
+        saveData(true);
         renderSectionModalTable();
     }
 
@@ -1132,7 +1132,7 @@ function editLink(index) {
 
         if (selectedSection === sectionName) selectedSection = "Miscellaneous";
 
-        saveData();
+        saveData(true);
         renderSectionModalTable();
     }
 
@@ -1203,7 +1203,7 @@ editChaptersBtn.addEventListener('click', () => {
         if (currentGroupIndex >= duplicateGroups.length) {
             duplicateModalOverlay.style.display = 'none';
             alert("All duplicates resolved!");
-            saveData();
+            saveData(true);
             return;
         }
 
