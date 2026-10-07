@@ -140,7 +140,8 @@
     background: #ffffff;
     padding: 20px;
     border-radius: 8px;
-    width: 280px;
+    width: max-content;
+    max-width: 90vw;
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
@@ -429,7 +430,6 @@
         <div class="stats-container">
             <strong>Stats</strong>
 <div id="stats-total">Total links : 0</div>
-<br>
 <div id="stats-last-update">Last update : -</div>
 <br>
 <div id="stats-videos">Videos : 0 ( 0.0 % )</div>
@@ -892,7 +892,7 @@ function getFilteredTopics() {
         durationStr = `${Math.max(1, diffMonths)} months ago`;
     }
 
-    return `Last update : ${day}-${month}-${year} , ${timeStr} ( ${durationStr} )`;
+    return `Last update : ${day} ${month} ${year} ${timeStr}<br>( ${durationStr} )`;
 }
 
     function renderStats() {
@@ -933,7 +933,7 @@ function getFilteredTopics() {
         document.getElementById('stats-unvisited').textContent = `Unvisited : ${unvisitedCount} ( ${calcPct(unvisitedCount)} % )`;
         document.getElementById('stats-subs-only').textContent = `Subscribers-only posts : ${subsOnlyPosts} ( ${calcPct(subsOnlyPosts)} % )`;
         document.getElementById('stats-public').textContent = `Public posts : ${publicPosts} ( ${calcPct(publicPosts)} % )`;
-        document.getElementById('stats-last-update').textContent = formatLastUpdate(lastUpdatedTimestamp);
+        document.getElementById('stats-last-update').innerHTML = formatLastUpdate(lastUpdatedTimestamp);
     }
 
     document.getElementById('reset-visited-btn').addEventListener('click', resetVisitedLinks);
