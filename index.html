@@ -761,12 +761,13 @@ function getFilteredTopics() {
         result = result.filter(item => item.color === 'red');
     }
 
-    if (topicSearchQuery.trim() !== '') {
+if (topicSearchQuery.trim() !== '') {
         const query = topicSearchQuery.toLowerCase().trim();
         result = result.filter(item => {
             const topicMatches = item.text && item.text.toLowerCase().includes(query);
             const chapterMatches = item.chapter && item.chapter.toLowerCase().includes(query);
-            return topicMatches || chapterMatches;
+            const urlMatches = item.url && item.url.toLowerCase().includes(query);
+            return topicMatches || chapterMatches || urlMatches;
         });
     }
 
