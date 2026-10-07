@@ -79,6 +79,18 @@
             font-weight: normal;
         }
 
+        /* Visited chapter (all topics under it are visited) */
+        .list-item.visited {
+            color: purple !important;
+            text-decoration: line-through !important;
+        }
+
+        /* Active + Visited chapter */
+        .list-item.active.visited {
+            color: red !important;
+            text-decoration: line-through !important;
+        }
+
         #chapter-list {
             width: 100%;
             display: flex;
@@ -823,18 +835,31 @@ if (savedChapter && chapters.includes(savedChapter)) {
         renderStats();
     }
 
-    // --- Chapter List Rendering ---
+// --- Chapter List Rendering ---
     function renderChapterList() {
         const chapterList = document.getElementById('chapter-list');
         chapterList.innerHTML = '';
         chapterSelect.innerHTML = '';
 
+        const visitedSet = new Set(getVisitedLinks());
+
         chapters.forEach(ch => {
+            // Find all links/topics belonging to this chapter
+            const chapterLinks = links.filter(item => item.chapter === ch);
+            
+            // A chapter is considered visited if it has at least 1 topic and ALL its topics are visited
+            const isChapterVisited = chapterLinks.length > 0 && chapterLinks.every(item => visitedSet.has(item.url));
+
             // Desktop Links
             const link = document.createElement('a');
             link.textContent = ch;
             link.href = '#';
-            link.className = `list-item ${ch === selectedChapter ? 'active' : ''}`;
+            
+            let classNames = 'list-item';
+            if (ch === selectedChapter) classNames += ' active';
+            if (isChapterVisited) classNames += ' visited';
+
+            link.className = classNames;
             link.onclick = (e) => {
                 e.preventDefault();
                 selectedChapter = ch;
