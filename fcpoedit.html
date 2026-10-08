@@ -969,11 +969,11 @@ if (savedChapter && chapters.includes(savedChapter)) {
             const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
             const toIndex = parseInt(row.dataset.index);
 
-            if (!isNaN(fromIndex) && fromIndex !== toIndex) {
-                const [movedItem] = dataArray.splice(fromIndex, 1);
-                dataArray.splice(toIndex, 0, movedItem);
-                if (onReorder) onReorder();
-            }
+if (!isNaN(fromIndex) && fromIndex !== toIndex) {
+    const [movedItem] = dataArray.splice(fromIndex, 1);
+    dataArray.splice(toIndex, 0, movedItem);
+    if (onReorder) onReorder(fromIndex, toIndex);
+}
         });
     }
 
@@ -1020,24 +1020,20 @@ if (savedChapter && chapters.includes(savedChapter)) {
             });
 
 setupDragEvents(row, modalTableBody, filtered, () => {
-    // Determine source and target indices from the spliced filtered array
-    const fromGlobalIdx = filtered[fromIndex]?.originalIndex; // where item moved from
-    
-    // Instead of directly remapping all links, extract filtered order into links:
-    const activeChapterLinks = filtered.map(item => {
-        const { originalIndex, ...cleanItem } = item;
-        return cleanItem;
-    });
+    // Clean up originalIndex properties created during mapping
+    const reorderedFiltered = filtered.map(({ originalIndex, ...cleanItem }) => cleanItem);
 
+    // Replace topics of the current chapter in order, keeping other chapters intact
     let filterIdx = 0;
     links = links.map(item => {
         if (item.chapter === selectedChapter) {
-            return activeChapterLinks[filterIdx++];
+            return reorderedFiltered[filterIdx++];
         }
         return item;
     });
 
     saveData(true);
+    renderAll();
     renderModalTable();
 });
             modalTableBody.appendChild(row);
@@ -1169,15 +1165,16 @@ function editLink(index) {
 
     if (newUrl && !/^https?:\/\//i.test(newUrl)) newUrl = 'https://' + newUrl;
 
-    const newChapter = prompt(`Enter chapter name:\nOptions: ${chapters.join(", ")}`, item.chapter);
-
-    if (newText.trim() && newUrl.trim() && chapters.includes(newChapter)) {
-        links[index] = { text: newText.trim(), url: newUrl.trim(), chapter: newChapter, color: 'blue' };
+    if (newText.trim() && newUrl.trim()) {
+        links[index] = { 
+            text: newText.trim(), 
+            url: newUrl.trim(), 
+            chapter: item.chapter, 
+            color: 'blue' 
+        };
         saveData(true);
-        renderAll(); // Refreshes main view and chapter lists
+        renderAll();
         renderModalTable();
-    } else if (newChapter && !chapters.includes(newChapter)) {
-        alert("Specified chapter does not exist.");
     }
 }
 
