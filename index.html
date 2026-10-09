@@ -16,6 +16,10 @@
             justify-content: center;
         }
 
+        body.modal-open {
+            overflow: hidden;
+        }
+
         .main-layout {
             display: flex;
             gap: 20px;
@@ -825,6 +829,7 @@
 
     function closeModal() {
         if (settingsModalOverlay.style.display === 'flex') {
+            document.body.classList.remove('modal-open');
             if (location.hash === '#settings') {
                 history.back();
             } else {
@@ -835,6 +840,7 @@
 
     function closeTargetModal() {
         if (targetModalOverlay.style.display === 'flex') {
+            document.body.classList.remove('modal-open');
             if (location.hash === '#daily-target') {
                 history.back();
             } else {
@@ -856,6 +862,7 @@
     });
 
     window.addEventListener('popstate', () => {
+        document.body.classList.remove('modal-open');
         settingsModalOverlay.style.display = 'none';
         targetModalOverlay.style.display = 'none';
     });
@@ -864,11 +871,13 @@
     const settingsBtnMobile = document.getElementById('settings-btn-mobile');
 
     function openSettingsModal() {
+        document.body.classList.add('modal-open');
         settingsModalOverlay.style.display = 'flex';
         history.pushState({ modalOpen: true }, '', '#settings');
     }
 
     function openTargetModal() {
+        document.body.classList.add('modal-open');
         settingsModalOverlay.style.display = 'none';
         targetModalOverlay.style.display = 'flex';
         history.pushState({ targetModalOpen: true }, '', '#daily-target');
