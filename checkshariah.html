@@ -7,17 +7,22 @@
     <style>
         body {
             margin: 0;
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
+            justify-content: flex-start;
+            padding: 40px 20px;
             font-family: Arial, sans-serif;
             background-color: #f9f9f9;
         }
         .main-container {
             display: flex;
+            flex-direction: column;
+            align-items: center;
             gap: 30px;
-            align-items: flex-start;
+            width: 100%;
+            max-width: 900px;
         }
         .container {
             text-align: center;
@@ -25,6 +30,8 @@
             padding: 30px;
             border-radius: 8px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            box-sizing: border-box;
         }
         .table-container {
             background: #ffffff;
@@ -33,6 +40,8 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
             max-height: 400px;
             overflow-y: auto;
+            width: 100%;
+            box-sizing: border-box;
         }
         label {
             font-size: 18px;
@@ -78,6 +87,11 @@
         th {
             background-color: #f4f4f4;
             font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+        }
+        th:hover {
+            background-color: #eaeaea;
         }
         .stock-link {
             color: #000000;
@@ -113,7 +127,7 @@
         <div class="container">
             <form id="stockForm" onsubmit="searchStock(event)">
                 <label for="stockInput">Find Stock :</label>
-                <input type="text" id="stockInput" autocomplete="off" required>
+                <input type="text" id="stockInput" autocomplete="off" required oninput="filterTable()">
                 <button type="submit">OK</button>
             </form>
         </div>
@@ -122,8 +136,8 @@
             <table id="stockTable">
                 <thead>
                     <tr>
-                        <th>Name of Stock</th>
-                        <th>Date & Time</th>
+                        <th onclick="sortTable('name')">Name of Stock <span id="sortNameIcon"></span></th>
+                        <th onclick="sortTable('date')">Date & Time <span id="sortDateIcon"></span></th>
                         <th>Islamicly</th>
                         <th>Zoya</th>
                         <th>Musaffa</th>
@@ -158,12 +172,18 @@
         });
         const stockDocRef = doc(db, "app_data", "shariah_stocks");
 
+        let globalStocks = [];
+        
+        // Load saved sort state from localStorage or default to newest date/time top
+        let currentSort = JSON.parse(localStorage.getItem('stockSortState')) || { column: 'date', direction: 'desc' };
+
         window.searchStock = function(event) {
             event.preventDefault();
             let ticker = document.getElementById('stockInput').value.trim();
             if (!ticker) return;
             openStockLinks(ticker);
             document.getElementById('stockInput').value = '';
+            filterTable();
         }
 
         window.openStockLinks = function(ticker) {
@@ -179,32 +199,92 @@
             urls.forEach(url => window.open(url, '_blank'));
         }
 
-        // Real-time listener to render table from Firebase
-        onSnapshot(stockDocRef, (docSnap) => {
+        window.sortTable = function(column) {
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+            localStorage.setItem('stockSortState', JSON.stringify(currentSort));
+            renderAndFilterTable();
+        }
+
+        window.filterTable = function() {
+            renderAndFilterTable();
+        }
+
+        function renderAndFilterTable() {
+            let query = document.getElementById('stockInput').value.trim().toLowerCase();
+            
+            // Filter by name of stock (ticker)
+            let filtered = globalStocks.filter(item => item.ticker.toLowerCase().includes(query));
+            
+            // If search returns nil/nothing found, list the full table
+            if (filtered.length === 0 && query !== '') {
+                filtered = [...globalStocks];
+            }
+
+            // Sort stocks
+            filtered.sort((a, b) => {
+                let valA, valB;
+                if (currentSort.column === 'name') {
+                    valA = a.ticker.toLowerCase();
+                    valB = b.ticker.toLowerCase();
+                    if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+                    if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+                    return 0;
+                } else if (currentSort.column === 'date') {
+                    valA = new Date(a.dateTime || 0).getTime();
+                    valB = new Date(b.dateTime || 0).getTime();
+                    // Fallback to string comparison if date parsing fails
+                    if (isNaN(valA) || isNaN(valB)) {
+                        valA = a.dateTime || '';
+                        valB = b.dateTime || '';
+                    }
+                    if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+                    if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+                    return 0;
+                }
+                return 0;
+            });
+
+            renderTable(filtered);
+            updateSortIndicators();
+        }
+
+        function renderTable(stocks) {
             let tbody = document.querySelector('#stockTable tbody');
             tbody.innerHTML = '';
             
-            if (docSnap.exists()) {
-                let data = docSnap.data();
-                let stocks = data.stocks || [];
+            stocks.forEach(item => {
+                let row = tbody.insertRow();
+                let cellStock = row.insertCell(0);
+                let cellDateTime = row.insertCell(1);
+                
+                cellStock.innerHTML = `<a class="stock-link" onclick="openStockLinks('${item.ticker}')">${item.ticker}</a>`;
+                cellDateTime.textContent = item.dateTime;
 
-                stocks.forEach(item => {
-                    let row = tbody.insertRow();
-                    let cellStock = row.insertCell(0);
-                    let cellDateTime = row.insertCell(1);
-                    
-                    cellStock.innerHTML = `<a class="stock-link" onclick="openStockLinks('${item.ticker}')">${item.ticker}</a>`;
-                    cellDateTime.textContent = item.dateTime;
-
-                    let statuses = [item.islamicly, item.zoya, item.musaffa, item.muslimXChange, item.spFunds];
-                    statuses.forEach((statusVal, idx) => {
-                        let cell = row.insertCell(idx + 2);
-                        cell.className = `status-cell ${getStatusClass(statusVal)}`;
-                        cell.textContent = getStatusText(statusVal);
-                    });
+                let statuses = [item.islamicly, item.zoya, item.musaffa, item.muslimXChange, item.spFunds];
+                statuses.forEach((statusVal, idx) => {
+                    let cell = row.insertCell(idx + 2);
+                    cell.className = `status-cell ${getStatusClass(statusVal)}`;
+                    cell.textContent = getStatusText(statusVal);
                 });
+            });
+        }
+
+        function updateSortIndicators() {
+            document.getElementById('sortNameIcon').textContent = '';
+            document.getElementById('sortDateIcon').textContent = '';
+
+            let icon = currentSort.direction === 'asc' ? ' ▲' : ' ▼';
+            if (currentSort.column === 'name') {
+                document.getElementById('sortNameIcon').textContent = icon;
+            } else if (currentSort.column === 'date') {
+                document.getElementById('sortDateIcon').textContent = icon;
             }
-        });
+        }
 
         function getStatusText(val) {
             if (val === 1) return 'Shariah';
@@ -217,6 +297,18 @@
             if (val === 2) return 'status-non-shariah';
             return 'status-na';
         }
+
+        // Real-time listener to fetch table data from Firebase
+        onSnapshot(stockDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                let data = docSnap.data();
+                globalStocks = data.stocks || [];
+            } else {
+                globalStocks = [];
+            }
+            renderAndFilterTable();
+        });
     </script>
 </body>
 </html>
+```[cite: 1]
