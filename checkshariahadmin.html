@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Shariah Status - Admin</title>
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            flex-direction: column;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .login-box {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .login-box h2 { margin: 0 0 10px 0; font-size: 18px; text-align: center; }
+        .login-box input { padding: 8px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; }
+        .login-box button, .header-bar button { background-color: #2196F3; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; }
+        #auth-error { color: red; font-size: 12px; margin: 0; display: none; }
+
+        .header-bar {
+            width: 100%; max-width: 1100px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+        }
+        .main-container {
+            display: flex; gap: 30px; align-items: flex-start;
+        }
+        .container {
+            text-align: center; background: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+        .table-container {
+            background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); max-height: 400px; overflow-y: auto;
+        }
+        label { font-size: 18px; font-weight: 500; margin-right: 10px; }
+        input[type="text"] {
+            padding: 8px 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; outline: none; width: 160px; text-transform: lowercase;
+        }
+        table { border-collapse: collapse; width: 100%; text-align: center; font-size: 14px; }
+        th, td { border: 1px solid #ddd; padding: 8px 12px; }
+        th { background-color: #f4f4f4; font-weight: 600; }
+        .stock-link { color: #000000; font-weight: bold; text-decoration: none; cursor: pointer; }
+        .stock-link:hover { text-decoration: underline; color: #007bff; }
+        .status-cell { cursor: pointer; user-select: none; font-weight: 500; }
+        .status-shariah { color: #28a745; background-color: #e6f9ec; }
+        .status-non-shariah { color: #dc3545; background-color: #fde8e8; }
+        .status-na { color: #000000; background-color: #f9f9f9; }
+    </style>
+</head>
+<body>
+
+    <!-- Login Modal -->
+    <div class="modal-overlay" id="login-overlay">
+        <div class="login-box">
+            <h2>Admin Login</h2>
+            <input type="email" id="login-email" placeholder="Email" autocomplete="username">
+            <input type="password" id="login-password" placeholder="Password" autocomplete="current-password">
+            <button id="login-btn">Sign In</button>
+            <p id="auth-error"></p>
+        </div>
+    </div>
+
+    <!-- Admin App Content -->
+    <div id="admin-app" style="display: none; flex-direction: column; align-items: center;">
+        <div class="header-bar">
+            <span>Logged in as Admin</span>
+            <button id="logout-btn" style="background-color: #757575;">Log Out</button>
+        </div>
+
+        <div class="main-container">
+            <div class="container">
+                <form id="stockForm" onsubmit="searchStock(event)">
+                    <label for="stockInput">Find Stock :</label>
+                    <input type="text" id="stockInput" autocomplete="off" required>
+                    <button type="submit">OK</button>
+                </form>
+            </div>
+
+            <div class="table-container">
+                <table id="stockTable">
+                    <thead>
+                        <tr>
+                            <th>Name of Stock</th>
+                            <th>Date & Time</th>
+                            <th>Islamicly</th>
+                            <th>Zoya</th>
+                            <th>Musaffa</th>
+                            <th>MuslimXChange</th>
+                            <th>SP-Funds.Com</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Populated from Firebase -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+        import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBgDtEmsmmglLcx6BbzR-IfFZ31duTPOag",
+            authDomain: "toc-app-3ffe0.firebaseapp.com",
+            projectId: "toc-app-3ffe0",
+            storageBucket: "toc-app-3ffe0.firebasestorage.app",
+            messagingSenderId: "1047075984315",
+            appId: "1:1047075984315:web:8ddf68765cbef4efb2ea9e",
+            measurementId: "G-H7677BPJ4G"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = initializeFirestore(app, {
+            localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+        });
+        const stockDocRef = doc(db, "app_data", "shariah_stocks");
+
+        let globalStocks = [];
+
+        // Auth handlers
+        const loginOverlay = document.getElementById('login-overlay');
+        const adminApp = document.getElementById('admin-app');
+        const authError = document.getElementById('auth-error');
+
+        document.getElementById('login-btn').addEventListener('click', async () => {
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value.trim();
+            authError.style.display = 'none';
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                authError.textContent = "Invalid login credentials.";
+                authError.style.display = 'block';
+            }
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                loginOverlay.style.display = 'none';
+                adminApp.style.display = 'flex';
+            } else {
+                loginOverlay.style.display = 'flex';
+                adminApp.style.display = 'none';
+            }
+        });
+
+        window.searchStock = function(event) {
+            event.preventDefault();
+            let ticker = document.getElementById('stockInput').value.trim();
+            if (!ticker) return;
+
+            let upperTicker = ticker.toUpperCase();
+            openStockLinks(ticker);
+
+            // Add to top of array if not already present
+            if (!globalStocks.some(s => s.ticker === upperTicker)) {
+                let now = new Date();
+                globalStocks.unshift({
+                    ticker: upperTicker,
+                    dateTime: now.toLocaleString(),
+                    islamicly: 0,
+                    zoya: 0,
+                    musaffa: 0,
+                    muslimXChange: 0,
+                    spFunds: 0
+                });
+                saveToFirebase();
+            }
+
+            document.getElementById('stockInput').value = '';
+        }
+
+        window.openStockLinks = function(ticker) {
+            let lowerTicker = ticker.toLowerCase();
+            let upperTicker = ticker.toUpperCase();
+            let urls = [
+                `https://islamicly.com/Web/Universe/X?ticker=${lowerTicker}`,
+                `https://zoya.finance/stocks/${lowerTicker}`,
+                `https://musaffa.com/stock/${upperTicker}/`,
+                `https://muslimxchange.com/ticker/${lowerTicker}/`,
+                `https://spscreener.mxcorporate.com/ticker/${lowerTicker}`
+            ];
+            urls.forEach(url => window.open(url, '_blank'));
+        }
+
+        function saveToFirebase() {
+            setDoc(stockDocRef, { stocks: globalStocks }, { merge: true }).catch(err => {
+                console.error("Error saving to Firebase:", err);
+            });
+        }
+
+        onSnapshot(stockDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                globalStocks = docSnap.data().stocks || [];
+            } else {
+                globalStocks = [];
+            }
+            renderTable();
+        });
+
+        function renderTable() {
+            let tbody = document.querySelector('#stockTable tbody');
+            tbody.innerHTML = '';
+
+            globalStocks.forEach((item, stockIndex) => {
+                let row = tbody.insertRow();
+                let cellStock = row.insertCell(0);
+                let cellDateTime = row.insertCell(1);
+
+                cellStock.innerHTML = `<a class="stock-link" onclick="openStockLinks('${item.ticker}')">${item.ticker}</a>`;
+                cellDateTime.textContent = item.dateTime;
+
+                let keys = ['islamicly', 'zoya', 'musaffa', 'muslimXChange', 'spFunds'];
+                keys.forEach((key, kidx) => {
+                    let cell = row.insertCell(kidx + 2);
+                    let val = item[key] || 0;
+                    cell.className = `status-cell ${getStatusClass(val)}`;
+                    cell.textContent = getStatusText(val);
+
+                    // Interactive click to cycle status (Admin only)
+                    cell.addEventListener('click', function() {
+                        item[key] = (val + 1) % 3;
+                        saveToFirebase();
+                    });
+                });
+            });
+        }
+
+        function getStatusText(val) {
+            if (val === 1) return 'Shariah';
+            if (val === 2) return 'Non-Shariah';
+            return 'N/A';
+        }
+
+        function getStatusClass(val) {
+            if (val === 1) return 'status-shariah';
+            if (val === 2) return 'status-non-shariah';
+            return 'status-na';
+        }
+    </script>
+</body>
+</html>

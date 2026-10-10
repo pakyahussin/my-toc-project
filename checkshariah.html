@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Shariah Status - Public</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+        }
+        .main-container {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+        }
+        .container {
+            text-align: center;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+        .table-container {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        label {
+            font-size: 18px;
+            font-weight: 500;
+            margin-right: 10px;
+        }
+        input[type="text"] {
+            padding: 8px 12px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            outline: none;
+            width: 160px;
+            text-transform: lowercase;
+        }
+        input[type="text"]:focus {
+            border-color: #007bff;
+        }
+        button {
+            padding: 8px 16px;
+            font-size: 16px;
+            font-weight: 500;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 8px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            text-align: center;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+        }
+        th {
+            background-color: #f4f4f4;
+            font-weight: 600;
+        }
+        .stock-link {
+            color: #000000;
+            font-weight: bold;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .stock-link:hover {
+            text-decoration: underline;
+            color: #007bff;
+        }
+        .status-cell {
+            user-select: none;
+            font-weight: 500;
+        }
+        .status-shariah {
+            color: #28a745;
+            background-color: #e6f9ec;
+        }
+        .status-non-shariah {
+            color: #dc3545;
+            background-color: #fde8e8;
+        }
+        .status-na {
+            color: #000000;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <div class="container">
+            <form id="stockForm" onsubmit="searchStock(event)">
+                <label for="stockInput">Find Stock :</label>
+                <input type="text" id="stockInput" autocomplete="off" required>
+                <button type="submit">OK</button>
+            </form>
+        </div>
+
+        <div class="table-container">
+            <table id="stockTable">
+                <thead>
+                    <tr>
+                        <th>Name of Stock</th>
+                        <th>Date & Time</th>
+                        <th>Islamicly</th>
+                        <th>Zoya</th>
+                        <th>Musaffa</th>
+                        <th>MuslimXChange</th>
+                        <th>SP-Funds.Com</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Populated dynamically from Firebase -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+        import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBgDtEmsmmglLcx6BbzR-IfFZ31duTPOag",
+            authDomain: "toc-app-3ffe0.firebaseapp.com",
+            projectId: "toc-app-3ffe0",
+            storageBucket: "toc-app-3ffe0.firebasestorage.app",
+            messagingSenderId: "1047075984315",
+            appId: "1:1047075984315:web:8ddf68765cbef4efb2ea9e",
+            measurementId: "G-H7677BPJ4G"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = initializeFirestore(app, {
+            localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+        });
+        const stockDocRef = doc(db, "app_data", "shariah_stocks");
+
+        window.searchStock = function(event) {
+            event.preventDefault();
+            let ticker = document.getElementById('stockInput').value.trim();
+            if (!ticker) return;
+            openStockLinks(ticker);
+            document.getElementById('stockInput').value = '';
+        }
+
+        window.openStockLinks = function(ticker) {
+            let lowerTicker = ticker.toLowerCase();
+            let upperTicker = ticker.toUpperCase();
+            let urls = [
+                `https://islamicly.com/Web/Universe/X?ticker=${lowerTicker}`,
+                `https://zoya.finance/stocks/${lowerTicker}`,
+                `https://musaffa.com/stock/${upperTicker}/`,
+                `https://muslimxchange.com/ticker/${lowerTicker}/`,
+                `https://spscreener.mxcorporate.com/ticker/${lowerTicker}`
+            ];
+            urls.forEach(url => window.open(url, '_blank'));
+        }
+
+        // Real-time listener to render table from Firebase
+        onSnapshot(stockDocRef, (docSnap) => {
+            let tbody = document.querySelector('#stockTable tbody');
+            tbody.innerHTML = '';
+            
+            if (docSnap.exists()) {
+                let data = docSnap.data();
+                let stocks = data.stocks || [];
+
+                stocks.forEach(item => {
+                    let row = tbody.insertRow();
+                    let cellStock = row.insertCell(0);
+                    let cellDateTime = row.insertCell(1);
+                    
+                    cellStock.innerHTML = `<a class="stock-link" onclick="openStockLinks('${item.ticker}')">${item.ticker}</a>`;
+                    cellDateTime.textContent = item.dateTime;
+
+                    let statuses = [item.islamicly, item.zoya, item.musaffa, item.muslimXChange, item.spFunds];
+                    statuses.forEach((statusVal, idx) => {
+                        let cell = row.insertCell(idx + 2);
+                        cell.className = `status-cell ${getStatusClass(statusVal)}`;
+                        cell.textContent = getStatusText(statusVal);
+                    });
+                });
+            }
+        });
+
+        function getStatusText(val) {
+            if (val === 1) return 'Shariah';
+            if (val === 2) return 'Non-Shariah';
+            return 'N/A';
+        }
+
+        function getStatusClass(val) {
+            if (val === 1) return 'status-shariah';
+            if (val === 2) return 'status-non-shariah';
+            return 'status-na';
+        }
+    </script>
+</body>
+</html>
