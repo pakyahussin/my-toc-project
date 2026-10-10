@@ -9,11 +9,13 @@
             margin: 0;
             min-height: 100vh;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
+            justify-content: flex-start;
+            padding: 40px 20px;
             font-family: Arial, sans-serif;
             background-color: #f0f0f0;
-            flex-direction: column;
+            overflow-x: auto;
         }
         .modal-overlay {
             position: fixed;
@@ -43,21 +45,30 @@
             width: 100%; max-width: 1100px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
         }
         .main-container {
-            display: flex; gap: 30px; align-items: flex-start;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            width: max-content;
         }
         .container {
-            text-align: center; background: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            text-align: center; background: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); width: 100%; box-sizing: border-box;
         }
         .table-container {
-            background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); max-height: 400px; overflow-y: auto;
+            background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); width: 100%; box-sizing: border-box;
         }
         label { font-size: 18px; font-weight: 500; margin-right: 10px; }
         input[type="text"] {
             padding: 8px 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; outline: none; width: 160px; text-transform: lowercase;
         }
-        table { border-collapse: collapse; width: 100%; text-align: center; font-size: 14px; }
+        button {
+            padding: 8px 16px; font-size: 16px; font-weight: 500; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 8px;
+        }
+        button:hover { background-color: #0056b3; }
+        table { border-collapse: collapse; width: 100%; text-align: center; font-size: 14px; white-space: nowrap; }
         th, td { border: 1px solid #ddd; padding: 8px 12px; }
-        th { background-color: #f4f4f4; font-weight: 600; }
+        th { background-color: #f4f4f4; font-weight: 600; cursor: pointer; user-select: none; }
+        th:hover { background-color: #eaeaea; }
         .stock-link { color: #000000; font-weight: bold; text-decoration: none; cursor: pointer; }
         .stock-link:hover { text-decoration: underline; color: #007bff; }
         .status-cell { cursor: pointer; user-select: none; font-weight: 500; }
@@ -90,17 +101,29 @@
             <div class="container">
                 <form id="stockForm" onsubmit="searchStock(event)">
                     <label for="stockInput">Find Stock :</label>
-                    <input type="text" id="stockInput" autocomplete="off" required>
+                    <input type="text" id="stockInput" autocomplete="off" required oninput="filterTable()">
                     <button type="submit">OK</button>
                 </form>
+            </div>
+
+            <div class="container" style="padding: 15px 30px;">
+                <label for="shariahThreshold">Consider shariah if</label>
+                <select id="shariahThreshold" onchange="updateThreshold()">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                </select>
+                <span style="font-size: 18px; font-weight: 500; margin-left: 10px;">/ 5 shariah compliant</span>
             </div>
 
             <div class="table-container">
                 <table id="stockTable">
                     <thead>
                         <tr>
-                            <th>Name of Stock</th>
-                            <th>Date & Time</th>
+                            <th onclick="sortTable('name')">Name of Stock <span id="sortNameIcon"></span></th>
+                            <th onclick="sortTable('date')">Date & Time <span id="sortDateIcon"></span></th>
                             <th>Islamicly</th>
                             <th>Zoya</th>
                             <th>Musaffa</th>
@@ -139,6 +162,16 @@
         const stockDocRef = doc(db, "app_data", "shariah_stocks");
 
         let globalStocks = [];
+        let currentSort = JSON.parse(localStorage.getItem('adminStockSortState')) || { column: 'date', direction: 'desc' };
+        
+        let savedThreshold = localStorage.getItem('shariahThreshold') || '3';
+        document.getElementById('shariahThreshold').value = savedThreshold;
+
+        window.updateThreshold = function() {
+            let val = document.getElementById('shariahThreshold').value;
+            localStorage.setItem('shariahThreshold', val);
+            renderAndFilterTable();
+        }
 
         // Auth handlers
         const loginOverlay = document.getElementById('login-overlay');
@@ -177,7 +210,6 @@
             let upperTicker = ticker.toUpperCase();
             openStockLinks(ticker);
 
-            // Add to top of array if not already present
             if (!globalStocks.some(s => s.ticker === upperTicker)) {
                 let now = new Date();
                 globalStocks.unshift({
@@ -193,6 +225,7 @@
             }
 
             document.getElementById('stockInput').value = '';
+            filterTable();
         }
 
         window.openStockLinks = function(ticker) {
@@ -208,6 +241,21 @@
             urls.forEach(url => window.open(url, '_blank'));
         }
 
+        window.sortTable = function(column) {
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+            localStorage.setItem('adminStockSortState', JSON.stringify(currentSort));
+            renderAndFilterTable();
+        }
+
+        window.filterTable = function() {
+            renderAndFilterTable();
+        }
+
         function saveToFirebase() {
             setDoc(stockDocRef, { stocks: globalStocks }, { merge: true }).catch(err => {
                 console.error("Error saving to Firebase:", err);
@@ -220,17 +268,60 @@
             } else {
                 globalStocks = [];
             }
-            renderTable();
+            renderAndFilterTable();
         });
 
-        function renderTable() {
+        function renderAndFilterTable() {
+            let query = document.getElementById('stockInput').value.trim().toLowerCase();
+            let filtered = globalStocks.filter(item => item.ticker.toLowerCase().includes(query));
+            
+            if (filtered.length === 0 && query !== '') {
+                filtered = [...globalStocks];
+            }
+
+            filtered.sort((a, b) => {
+                let valA, valB;
+                if (currentSort.column === 'name') {
+                    valA = a.ticker.toLowerCase();
+                    valB = b.ticker.toLowerCase();
+                    if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+                    if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+                    return 0;
+                } else if (currentSort.column === 'date') {
+                    valA = new Date(a.dateTime || 0).getTime();
+                    valB = new Date(b.dateTime || 0).getTime();
+                    if (isNaN(valA) || isNaN(valB)) {
+                        valA = a.dateTime || '';
+                        valB = b.dateTime || '';
+                    }
+                    if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+                    if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+                    return 0;
+                }
+                return 0;
+            });
+
+            renderTable(filtered);
+            updateSortIndicators();
+        }
+
+        function renderTable(stocks) {
             let tbody = document.querySelector('#stockTable tbody');
             tbody.innerHTML = '';
 
-            globalStocks.forEach((item, stockIndex) => {
+            let threshold = parseInt(document.getElementById('shariahThreshold').value, 10);
+
+            stocks.forEach((item) => {
                 let row = tbody.insertRow();
                 let cellStock = row.insertCell(0);
                 let cellDateTime = row.insertCell(1);
+
+                let statuses = [item.islamicly, item.zoya, item.musaffa, item.muslimXChange, item.spFunds];
+                let shariahCount = statuses.filter(val => val === 1).length;
+                let complianceClass = shariahCount >= threshold ? 'status-shariah' : 'status-non-shariah';
+
+                cellStock.className = `status-cell ${complianceClass}`;
+                cellDateTime.className = `status-cell ${complianceClass}`;
 
                 cellStock.innerHTML = `<a class="stock-link" onclick="openStockLinks('${item.ticker}')">${item.ticker}</a>`;
                 cellDateTime.textContent = item.dateTime;
@@ -242,13 +333,24 @@
                     cell.className = `status-cell ${getStatusClass(val)}`;
                     cell.textContent = getStatusText(val);
 
-                    // Interactive click to cycle status (Admin only)
                     cell.addEventListener('click', function() {
                         item[key] = (val + 1) % 3;
                         saveToFirebase();
                     });
                 });
             });
+        }
+
+        function updateSortIndicators() {
+            document.getElementById('sortNameIcon').textContent = '';
+            document.getElementById('sortDateIcon').textContent = '';
+
+            let icon = currentSort.direction === 'asc' ? ' ▲' : ' ▼';
+            if (currentSort.column === 'name') {
+                document.getElementById('sortNameIcon').textContent = icon;
+            } else if (currentSort.column === 'date') {
+                document.getElementById('sortDateIcon').textContent = icon;
+            }
         }
 
         function getStatusText(val) {
