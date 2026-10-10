@@ -133,6 +133,18 @@ body {
             </form>
         </div>
 
+        <div class="container" style="padding: 15px 30px;">
+            <label for="shariahThreshold">Consider shariah if</label>
+            <select id="shariahThreshold" onchange="updateThreshold()">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+            </select>
+            <span style="font-size: 18px; font-weight: 500; margin-left: 10px;">/ 5 shariah compliant</span>
+        </div>
+
         <div class="table-container">
             <table id="stockTable">
                 <thead>
@@ -215,6 +227,16 @@ body {
             renderAndFilterTable();
         }
 
+        // Load saved threshold from localStorage or default to 3
+        let savedThreshold = localStorage.getItem('shariahThreshold') || '3';
+        document.getElementById('shariahThreshold').value = savedThreshold;
+
+        window.updateThreshold = function() {
+            let val = document.getElementById('shariahThreshold').value;
+            localStorage.setItem('shariahThreshold', val);
+            renderAndFilterTable();
+        }
+
         function renderAndFilterTable() {
             let query = document.getElementById('stockInput').value.trim().toLowerCase();
             
@@ -258,15 +280,26 @@ body {
             let tbody = document.querySelector('#stockTable tbody');
             tbody.innerHTML = '';
             
+            let threshold = parseInt(document.getElementById('shariahThreshold').value, 10);
+
             stocks.forEach(item => {
                 let row = tbody.insertRow();
                 let cellStock = row.insertCell(0);
                 let cellDateTime = row.insertCell(1);
-                
+
+                // Count how many statuses are Shariah (value === 1)
+                let statuses = [item.islamicly, item.zoya, item.musaffa, item.muslimXChange, item.spFunds];
+                let shariahCount = statuses.filter(val => val === 1).length;
+
+                // Determine background class based on threshold
+                let complianceClass = shariahCount >= threshold ? 'status-shariah' : 'status-non-shariah';
+
+                cellStock.className = `status-cell ${complianceClass}`;
+                cellDateTime.className = `status-cell ${complianceClass}`;
+
                 cellStock.innerHTML = `<a class="stock-link" onclick="openStockLinks('${item.ticker}')">${item.ticker}</a>`;
                 cellDateTime.textContent = item.dateTime;
 
-                let statuses = [item.islamicly, item.zoya, item.musaffa, item.muslimXChange, item.spFunds];
                 statuses.forEach((statusVal, idx) => {
                     let cell = row.insertCell(idx + 2);
                     cell.className = `status-cell ${getStatusClass(statusVal)}`;
