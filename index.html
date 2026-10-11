@@ -636,6 +636,10 @@
     const btnSubTarget = document.getElementById('btn-sub-target');
     const dailyTargetLogs = document.getElementById('daily-target-logs');
 
+    function slugify(text) {
+    return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    }
+
     // Date formatting helper: YYYY-MM-DD
     function getLocalDateString(d = new Date()) {
         const year = d.getFullYear();
@@ -761,6 +765,7 @@
     chapterSelect.addEventListener('change', (e) => {
         selectedChapter = e.target.value;
         saveNavigationState();
+        history.pushState({ chapter: selectedChapter }, '', `#${slugify(selectedChapter)}`);
         renderAll();
     });
 
@@ -782,6 +787,24 @@
             }
 
             links = data.links || [];
+
+            const hash = window.location.hash.replace('#', '');
+            let hashMatched = false;
+            if (hash) {
+                const matchedChapter = chapters.find(ch => slugify(ch.name) === hash);
+                if (matchedChapter) {
+                    selectedChapter = matchedChapter.name;
+                    selectedSection = matchedChapter.section;
+                    hashMatched = true;
+                }
+            }
+
+            if (!hashMatched) {
+                const savedSection = localStorage.getItem('selected_section');
+                const savedChapter = localStorage.getItem('selected_chapter');
+                if (savedSection) selectedSection = savedSection;
+                if (savedChapter) selectedChapter = savedChapter;
+            }
 
             const savedSection = localStorage.getItem('selected_section');
             const savedChapter = localStorage.getItem('selected_chapter');
@@ -898,6 +921,17 @@
         document.body.classList.remove('modal-open');
         settingsModalOverlay.style.display = 'none';
         targetModalOverlay.style.display = 'none';
+
+        const hash = window.location.hash.replace('#', '');
+        if (hash) {
+            const matchedChapter = chapters.find(ch => slugify(ch.name) === hash);
+            if (matchedChapter) {
+                selectedChapter = matchedChapter.name;
+                selectedSection = matchedChapter.section;
+                saveNavigationState();
+                renderAll();
+            }
+        }
     });
 
     const settingsBtnDesktop = document.getElementById('settings-btn-desktop');
@@ -1148,6 +1182,7 @@ function renderDailyTargetLogs() {
                 e.preventDefault();
                 selectedChapter = chObj.name;
                 saveNavigationState();
+                history.pushState({ chapter: chObj.name }, '', `#${slugify(chObj.name)}`);
                 renderAll();
             };
             chapterList.appendChild(link);
