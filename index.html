@@ -317,6 +317,36 @@
             font-size: 14px;
         }
 
+        .target-date-row {
+            margin-bottom: 10px;
+        }
+
+        .target-date-header {
+            cursor: pointer;
+            user-select: none;
+            font-weight: bold;
+        }
+
+        .target-topics-list {
+            margin-top: 6px;
+            margin-left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 13px;
+        }
+
+        .target-topics-list a {
+            color: #0000ee;
+            text-decoration: none;
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        .target-topics-list a:hover {
+            text-decoration: underline;
+        }
+
         .status-done {
             color: #008000;
             font-weight: bold;
@@ -921,7 +951,6 @@ function renderDailyTargetLogs() {
     dailyTargetLogs.innerHTML = '';
     const target = getDailyTarget();
 
-    // Dynamically update the target number in the instruction text
     const targetDisplay = document.getElementById('target-num-display');
     if (targetDisplay) {
         targetDisplay.textContent = target;
@@ -943,20 +972,67 @@ function renderDailyTargetLogs() {
     }
 
     datesList.forEach(dateStr => {
-        const visitedToday = history[dateStr] ? history[dateStr].length : 0;
+        const dayUrls = history[dateStr] || [];
+        const visitedToday = dayUrls.length;
         const isToday = (dateStr === todayStr);
 
         let statusHtml = '';
         if (visitedToday >= target) {
-            statusHtml = `<span class="status-done">- DONE ✔</span>`;
+            statusHtml = `<span class="status-done"> - DONE ✔</span>`;
         } else {
             if (!isToday) {
-                statusHtml = `<span class="status-not-done">- NOT DONE ❌</span>`;
+                statusHtml = `<span class="status-not-done"> - NOT DONE ❌</span>`;
             }
         }
 
         const row = document.createElement('div');
-        row.innerHTML = `${formatDisplayDate(dateStr)} : ${visitedToday} ${statusHtml}`;
+        row.className = 'target-date-row';
+
+        const header = document.createElement('div');
+        header.className = 'target-date-header';
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'target-topics-list';
+
+        // Today's date expanded by default (▼), old dates hidden (►)
+        let isOpen = isToday;
+        
+        const updateHeaderHtml = () => {
+            header.innerHTML = `${isOpen ? '▼' : '►'} ${formatDisplayDate(dateStr)} : ${visitedToday} ${statusHtml}`;
+        };
+
+        updateHeaderHtml();
+        contentDiv.style.display = isOpen ? 'flex' : 'none';
+
+        // Populate topics list clicked on that day
+        if (dayUrls.length === 0) {
+            const noTopic = document.createElement('div');
+            noTopic.style.color = '#666';
+            noTopic.style.fontStyle = 'italic';
+            noTopic.textContent = 'No topics clicked';
+            contentDiv.appendChild(noTopic);
+        } else {
+            dayUrls.forEach(url => {
+                const linkObj = links.find(l => l.url === url);
+                const topicTitle = linkObj ? linkObj.text : url;
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.textContent = topicTitle;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                contentDiv.appendChild(a);
+            });
+        }
+
+        header.addEventListener('click', () => {
+            isOpen = !isOpen;
+            contentDiv.style.display = isOpen ? 'flex' : 'none';
+            updateHeaderHtml();
+        });
+
+        row.appendChild(header);
+        row.appendChild(contentDiv);
         dailyTargetLogs.appendChild(row);
     });
 }
