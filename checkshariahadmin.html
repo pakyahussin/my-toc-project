@@ -48,7 +48,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 30px;
+            gap: 20px;
             width: max-content;
         }
         .container {
@@ -65,6 +65,12 @@
             padding: 8px 16px; font-size: 16px; font-weight: 500; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 8px;
         }
         button:hover { background-color: #0056b3; }
+        button.secondary {
+            background-color: #6c757d;
+        }
+        button.secondary:hover {
+            background-color: #5a6268;
+        }
         table { border-collapse: collapse; width: 100%; text-align: center; font-size: 14px; white-space: nowrap; }
         th, td { border: 1px solid #ddd; padding: 8px 12px; }
         th { background-color: #f4f4f4; font-weight: 600; cursor: pointer; user-select: none; }
@@ -75,6 +81,33 @@
         .status-shariah { color: #28a745; background-color: #e6f9ec; }
         .status-non-shariah { color: #dc3545; background-color: #fde8e8; }
         .status-na { color: #000000; background-color: #f9f9f9; }
+        .info-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            text-align: left;
+            gap: 40px;
+        }
+        .info-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #333;
+        }
+        .checkbox-grid {
+            display: grid;
+            grid-template-columns: auto auto;
+            gap: 10px 30px;
+            align-items: center;
+        }
+        .checkbox-grid label {
+            font-size: 14px;
+            font-weight: normal;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            margin: 0;
+        }
     </style>
 </head>
 <body>
@@ -103,7 +136,25 @@
                     <label for="stockInput">Find Stock :</label>
                     <input type="text" id="stockInput" autocomplete="off" required oninput="filterTable()">
                     <button type="submit">OK</button>
+                    <button type="button" class="secondary" onclick="clearSearch()">Clear</button>
                 </form>
+            </div>
+
+            <div class="container info-box">
+                <div class="info-text">
+                    <div>- <strong>how to use</strong> : type the ticker symbol that you want to search & click OK</div>
+                    <div>- Islamicly requires login</div>
+                    <div>- all 4 others does not require login</div>
+                    <div>- MuslimXChange has a limit search per day (if lebih , use incognito)</div>
+                </div>
+                <div class="checkbox-grid">
+                    <label><input type="checkbox" id="chkIslamicly" onchange="savePreferences()"> Islamicly</label>
+                    <label><input type="checkbox" id="chkMuslimXChange" onchange="savePreferences()"> MuslimXChange</label>
+                    <label><input type="checkbox" id="chkZoya" onchange="savePreferences()"> Zoya</label>
+                    <label><input type="checkbox" id="chkSpFunds" onchange="savePreferences()"> SP-Funds.com</label>
+                    <label><input type="checkbox" id="chkMusaffa" onchange="savePreferences()"> Musaffa</label>
+                    <div></div>
+                </div>
             </div>
 
             <div class="container" style="padding: 15px 30px;">
@@ -164,7 +215,39 @@
         let globalStocks = [];
         let currentSort = JSON.parse(localStorage.getItem('adminStockSortState')) || { column: 'date', direction: 'desc' };
         
-        let savedThreshold = localStorage.getItem('shariahThreshold') || '3';
+        // Load link preferences from localStorage or defaults
+        function loadPreferences() {
+            let prefs = JSON.parse(localStorage.getItem('adminStockLinkPreferences'));
+            if (!prefs) {
+                prefs = {
+                    chkIslamicly: false,
+                    chkZoya: true,
+                    chkMusaffa: true,
+                    chkMuslimXChange: true,
+                    chkSpFunds: true
+                };
+            }
+            document.getElementById('chkIslamicly').checked = !!prefs.chkIslamicly;
+            document.getElementById('chkZoya').checked = !!prefs.chkZoya;
+            document.getElementById('chkMusaffa').checked = !!prefs.chkMusaffa;
+            document.getElementById('chkMuslimXChange').checked = !!prefs.chkMuslimXChange;
+            document.getElementById('chkSpFunds').checked = !!prefs.chkSpFunds;
+        }
+
+        window.savePreferences = function() {
+            let prefs = {
+                chkIslamicly: document.getElementById('chkIslamicly').checked,
+                chkZoya: document.getElementById('chkZoya').checked,
+                chkMusaffa: document.getElementById('chkMusaffa').checked,
+                chkMuslimXChange: document.getElementById('chkMuslimXChange').checked,
+                chkSpFunds: document.getElementById('chkSpFunds').checked
+            };
+            localStorage.setItem('adminStockLinkPreferences', JSON.stringify(prefs));
+        }
+
+        loadPreferences();
+
+        let savedThreshold = localStorage.getItem('shariahThreshold') || '4';
         document.getElementById('shariahThreshold').value = savedThreshold;
 
         window.updateThreshold = function() {
@@ -228,17 +311,33 @@
             filterTable();
         }
 
+        window.clearSearch = function() {
+            document.getElementById('stockInput').value = '';
+            filterTable();
+        }
+
         window.openStockLinks = function(ticker) {
             let lowerTicker = ticker.toLowerCase();
             let upperTicker = ticker.toUpperCase();
-            let urls = [
-                `https://islamicly.com/Web/Universe/X?ticker=${lowerTicker}`,
-                `https://zoya.finance/stocks/${lowerTicker}`,
-                `https://musaffa.com/stock/${upperTicker}/`,
-                `https://muslimxchange.com/ticker/${lowerTicker}/`,
-                `https://spscreener.mxcorporate.com/ticker/${lowerTicker}`
-            ];
-            urls.forEach(url => window.open(url, '_blank'));
+            
+            let linksToOpen = [];
+            if (document.getElementById('chkIslamicly').checked) {
+                linksToOpen.push(`https://islamicly.com/Web/Universe/X?ticker=${lowerTicker}`);
+            }
+            if (document.getElementById('chkZoya').checked) {
+                linksToOpen.push(`https://zoya.finance/stocks/${lowerTicker}`);
+            }
+            if (document.getElementById('chkMusaffa').checked) {
+                linksToOpen.push(`https://musaffa.com/stock/${upperTicker}/`);
+            }
+            if (document.getElementById('chkMuslimXChange').checked) {
+                linksToOpen.push(`https://muslimxchange.com/ticker/${lowerTicker}/`);
+            }
+            if (document.getElementById('chkSpFunds').checked) {
+                linksToOpen.push(`https://spscreener.mxcorporate.com/ticker/${lowerTicker}`);
+            }
+
+            linksToOpen.forEach(url => window.open(url, '_blank'));
         }
 
         window.sortTable = function(column) {
@@ -275,9 +374,7 @@
             let query = document.getElementById('stockInput').value.trim().toLowerCase();
             let filtered = globalStocks.filter(item => item.ticker.toLowerCase().includes(query));
             
-            if (filtered.length === 0 && query !== '') {
-                filtered = [...globalStocks];
-            }
+            // If filter returns nothing, the table will also return nothing
 
             filtered.sort((a, b) => {
                 let valA, valB;
