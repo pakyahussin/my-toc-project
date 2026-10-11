@@ -17,22 +17,22 @@
             align-items: center;
         }
 
-/* Update .header-bar to center horizontally on desktop */
-.header-bar {
-    width: 100%;
-    max-width: 1100px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin: 0 auto 20px auto; /* Added horizontal auto margin */
-}
+        /* Update .header-bar to center horizontally on desktop */
+        .header-bar {
+            width: 100%;
+            max-width: 1100px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 0 auto 20px auto; /* Added horizontal auto margin */
+        }
 
-/* Update .main-layout to center the columns */
-.main-layout {
-    display: flex;
-    gap: 20px;
-    justify-content: center; /* Added to keep containers centered */
-}
+        /* Update .main-layout to center the columns */
+        .main-layout {
+            display: flex;
+            gap: 20px;
+            justify-content: center; /* Added to keep containers centered */
+        }
 
         .content-container {
             width: max-content;
@@ -222,6 +222,47 @@
             flex-grow: 1;
         }
 
+        .topic-search-container {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .topic-search-row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .topic-search-input {
+            flex: 1;
+            padding: 6px 8px;
+            font-size: 13px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .clear-search-btn {
+            padding: 6px 10px;
+            font-size: 12px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .clear-search-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .clear-search-btn:not(:disabled):hover {
+            background-color: #e0e0e0;
+        }
+
         .modal-header {
             display: flex;
             justify-content: space-between;
@@ -408,11 +449,11 @@
         }
 
         #admin-app {
-    display: none;
-    width: 100%;
-    max-width: 1100px;
-    margin: 0 auto; /* Added to center the page horizontally */
-}
+            display: none;
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto; /* Added to center the page horizontally */
+        }
 
         /* Mobile Styles */
         @media (max-width: 768px) {
@@ -449,28 +490,28 @@
                 display: none !important;
             }
 
-/* Keep list visible on mobile, displayed inline with natural line wrapping */
-    #chapter-list {
-        display: flex !important;
-        flex-direction: row !important;
-        flex-wrap: wrap !important;
-        align-items: center !important;
-        gap: 6px !important;
-        width: 100%;
-    }
+        /* Keep list visible on mobile, displayed inline with natural line wrapping */
+            #chapter-list {
+                display: flex !important;
+                flex-direction: row !important;
+                flex-wrap: wrap !important;
+                align-items: center !important;
+                gap: 6px !important;
+                width: 100%;
+            }
 
-/* Hide dropdown select element on mobile */
-    .dropdown-select {
-        display: none !important;
-    }
+        /* Hide dropdown select element on mobile */
+            .dropdown-select {
+                display: none !important;
+            }
 
-    /* Style horizontal links */
-    #chapter-list .list-item {
-        display: inline-flex !important;
-        align-items: center !important;
-        font-size: 14px;
-        line-height: 1.5;
-    }
+        /* Style horizontal links */
+            #chapter-list .list-item {
+                display: inline-flex !important;
+                align-items: center !important;
+                font-size: 14px;
+                line-height: 1.5;
+            }
 
     /* Insert black pipe separator between items */
     #chapter-list .list-item:not(:last-child)::after {
@@ -659,7 +700,17 @@
         <div class="stats-container">
             <div id="stats-total">Total links : 0</div>
             <div id="stats-last-update">Last update : -</div>
+            
+            <!-- SEARCH BOX -->
+            <div class="topic-search-container">
+                <label for="topic-search-input">filter topics :</label>
+                <div class="topic-search-row">
+                    <input type="text" id="topic-search-input" class="topic-search-input" placeholder="Type to filter...">
+                    <button id="clear-search-btn" class="clear-search-btn" disabled>clear</button>
+                </div>
+            </div>
             <br>
+
             <div id="stats-visited">Visited : 0 ( 0.0 % )</div>
             <div id="stats-unvisited">Unvisited : 0 ( 0.0 % )</div>
             <br>
@@ -841,9 +892,12 @@ if (savedChapter && chapters.includes(savedChapter)) {
         chapterList.innerHTML = '';
         chapterSelect.innerHTML = '';
 
-        const visitedSet = new Set(getVisitedLinks());
+        const activeTopics = getFilteredTopics();
+        const visibleChapters = chapters.filter(ch => 
+            activeTopics.some(link => link.chapter === ch)
+        );
 
-        chapters.forEach(ch => {
+        visibleChapters.forEach(ch => {
             // Find all links/topics belonging to this chapter
             const chapterLinks = links.filter(item => item.chapter === ch);
             
@@ -895,8 +949,74 @@ if (savedChapter && chapters.includes(savedChapter)) {
         renderAll();
     }
 
+    let topicSearchQuery = "";
+    const topicSearchInput = document.getElementById('topic-search-input');
+    const clearSearchBtn = document.getElementById('clear-search-btn');
+
+    const savedSearchQuery = localStorage.getItem('fcpo_topic_search_query');
+    if (savedSearchQuery !== null) {
+        topicSearchQuery = savedSearchQuery;
+        topicSearchInput.value = topicSearchQuery;
+        clearSearchBtn.disabled = !topicSearchQuery.trim();
+    }
+
+    function saveUserSettings() {
+        localStorage.setItem('fcpo_topic_search_query', topicSearchQuery);
+    }
+
+    function getFilteredTopics() {
+        let result = links;
+        if (topicSearchQuery.trim() !== '') {
+            const query = topicSearchQuery.toLowerCase().trim();
+            result = result.filter(item => {
+                const topicMatches = item.text && item.text.toLowerCase().includes(query);
+                const chapterMatches = item.chapter && item.chapter.toLowerCase().includes(query);
+                const urlMatches = item.url && item.url.toLowerCase().includes(query);
+                return topicMatches || chapterMatches || urlMatches;
+            });
+        }
+        return result;
+    }
+
+    topicSearchInput.addEventListener('input', (e) => {
+        topicSearchQuery = e.target.value;
+        clearSearchBtn.disabled = !topicSearchQuery.trim();
+        saveUserSettings();
+        
+        const activeTopics = getFilteredTopics();
+        const availableChapters = chapters.filter(ch => 
+            activeTopics.some(link => link.chapter === ch)
+        );
+        
+        if (!availableChapters.includes(selectedChapter)) {
+            selectedChapter = availableChapters[0] || "";
+        }
+
+        saveNavigationState();
+        renderAll();
+    });
+
+    clearSearchBtn.addEventListener('click', () => {
+        topicSearchQuery = "";
+        topicSearchInput.value = "";
+        clearSearchBtn.disabled = true;
+        saveUserSettings();
+
+        const activeTopics = getFilteredTopics();
+        const availableChapters = chapters.filter(ch => 
+            activeTopics.some(link => link.chapter === ch)
+        );
+        
+        if (!availableChapters.includes(selectedChapter)) {
+            selectedChapter = availableChapters[0] || "";
+        }
+
+        saveNavigationState();
+        renderAll();
+    });
+
     // --- Links/Topics Rendering ---
-    function renderMainLinks() {
+function renderMainLinks() {
         linkList.innerHTML = '';
         
         const headerText = selectedChapter ? `Topics : ${selectedChapter}` : "No Chapter Selected";
@@ -904,7 +1024,7 @@ if (savedChapter && chapters.includes(savedChapter)) {
 
         if (!selectedChapter) return;
 
-        const filtered = links.filter(item => item.chapter === selectedChapter);
+        const filtered = getFilteredTopics().filter(item => item.chapter === selectedChapter);
         const visitedSet = new Set(getVisitedLinks());
 
         filtered.forEach(item => {
