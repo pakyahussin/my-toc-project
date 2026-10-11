@@ -339,10 +339,11 @@
         .target-topics-list a {
             color: #0000ee;
             text-decoration: none;
-            white-space: nowrap;      /* Prevent text wrapping */
-            overflow: hidden;         /* Hide overflow during calculation */
-            display: block;           /* Ensure block-level width comparison */
-            width: 100%;              /* Take full available width */
+            font-size: 13px;          /* Ensure font size stays 13px */
+            white-space: nowrap;      /* Prevent text wrapping to a new line */
+            overflow: hidden;         /* Cut off long text */
+            display: block;           /* Occupy line width */
+            width: 100%;              
             box-sizing: border-box;
         }
 
@@ -984,23 +985,6 @@
         return JSON.parse(localStorage.getItem('visited_links_history') || '{}');
     }
 
-    function autoShrinkLink(aElement, minFontSize = 9, maxFontSize = 13) {
-    let currentSize = maxFontSize;
-    aElement.style.fontSize = `${currentSize}px`;
-
-    // Wait for DOM layout/render pass to measure widths
-    requestAnimationFrame(() => {
-        const containerWidth = aElement.parentElement.clientWidth;
-        if (containerWidth <= 0) return;
-
-        // Decrease font size by 0.5px until text fits or min size is reached
-        while (aElement.scrollWidth > containerWidth && currentSize > minFontSize) {
-            currentSize -= 0.5;
-            aElement.style.fontSize = `${currentSize}px`;
-        }
-    });
-}
-
 function renderDailyTargetLogs() {
     dailyTargetLogs.innerHTML = '';
     const target = getDailyTarget();
@@ -1076,7 +1060,6 @@ function renderDailyTargetLogs() {
                 a.target = '_blank';
                 a.rel = 'noopener noreferrer';
                 contentDiv.appendChild(a);
-                autoShrinkLink(a, 9, 13);
             });
         }
 
