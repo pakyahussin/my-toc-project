@@ -887,7 +887,7 @@ if (savedChapter && chapters.includes(savedChapter)) {
     }
 
 // --- Chapter List Rendering ---
-    function renderChapterList() {
+function renderChapterList() {
         const chapterList = document.getElementById('chapter-list');
         chapterList.innerHTML = '';
         chapterSelect.innerHTML = '';
@@ -897,11 +897,10 @@ if (savedChapter && chapters.includes(savedChapter)) {
             activeTopics.some(link => link.chapter === ch)
         );
 
+        const visitedSet = new Set(getVisitedLinks()); // <-- Define visitedSet here
+
         visibleChapters.forEach(ch => {
-            // Find all links/topics belonging to this chapter
             const chapterLinks = links.filter(item => item.chapter === ch);
-            
-            // A chapter is considered visited if it has at least 1 topic and ALL its topics are visited
             const isChapterVisited = chapterLinks.length > 0 && chapterLinks.every(item => visitedSet.has(item.url));
 
             // Desktop Links
