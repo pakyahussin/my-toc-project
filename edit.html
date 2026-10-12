@@ -836,15 +836,10 @@ row.querySelector('.color-select').addEventListener('change', (e) => {
     }
 
     function changeLinkChapter(index, newChapter) {
-        links[index].chapter = newChapter;
-        const targetChapterObj = chapters.find(ch => ch.name === newChapter);
-        if (targetChapterObj) {
-            selectedSection = targetChapterObj.section;
-        }
-        selectedChapter = newChapter;
-        saveData(true);
-        renderAll();
-        renderModalTable();
+            links[index].chapter = newChapter;
+            saveData(true);
+            renderAll();
+            renderModalTable();
     }
 
 // --- Manage Chapters Modal Table ---
