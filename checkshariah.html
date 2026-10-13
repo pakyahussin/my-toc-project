@@ -505,7 +505,7 @@
             let listStr = compliantList.join(" , ");
             let lastCheckStr = formatCopyDate(item.dateTime);
 
-            let textToCopy = `Shariah : ${shariahCount} / 5\nList shariah : ${listStr}\nLast check : ${lastCheckStr}`;
+            let textToCopy = `Shariah : ${shariahCount} / 5\n\nList shariah : ${listStr}\n\nLast check : ${lastCheckStr}`;
 
             navigator.clipboard.writeText(textToCopy).then(() => {
                 // Optional: brief visual feedback if desired
