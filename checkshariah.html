@@ -204,6 +204,18 @@
             color: #333;
             z-index: 1010;
         }
+
+        /* Mobile specific adjustments */
+        @media screen and (max-width: 768px) {
+            body {
+                overflow-x: auto;
+            }
+            .table-container {
+                width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
     </style>
 </head>
 <body>
