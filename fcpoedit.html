@@ -213,7 +213,7 @@
         }
 
         .stats-modal-content {
-            width: 280px;
+            width: 320px;
             max-width: 90%;
         }
 
@@ -261,6 +261,49 @@
 
         .clear-search-btn:not(:disabled):hover {
             background-color: #e0e0e0;
+        }
+
+        /* Month Filter Buttons inside Stats Modal */
+        .stats-month-filters {
+            margin-top: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 180px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            padding: 6px;
+            border-radius: 4px;
+        }
+
+        .stats-year-group {
+            font-size: 13px;
+        }
+
+        .stats-year-group strong {
+            display: inline;
+            margin-bottom: 0;
+            font-size: 13px;
+        }
+
+        .stats-month-btn-group {
+            display: inline;
+            margin-left: 4px;
+        }
+
+        .month-filter-btn {
+            background: none;
+            border: none;
+            color: #0000ee;
+            padding: 0;
+            margin-right: 4px;
+            font-size: 13px;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .month-filter-btn:hover {
+            color: #0056b3;
         }
 
         .modal-header {
@@ -380,7 +423,7 @@
             line-height: 1.6;
         }
 
-        .stats-container strong {
+        .stats-container > strong {
             font-size: 14px;
             display: block;
             margin-bottom: 6px;
@@ -709,6 +752,12 @@
                     <button id="clear-search-btn" class="clear-search-btn" disabled>clear</button>
                 </div>
             </div>
+
+            <!-- MONTH FILTER BUTTONS -->
+            <div class="stats-month-filters" id="stats-month-filters">
+                <!-- Dynamically populated year/month buttons -->
+            </div>
+
             <br>
 
             <div id="stats-visited">Visited : 0 ( 0.0 % )</div>
@@ -760,6 +809,7 @@
     let chapters = ["Miscellaneous"];
     let links = [];
     let selectedChapter = "Miscellaneous";
+    let activeMonthFilter = null; // Stores currently selected month filter (e.g., "Aug 2026") if active
     let lastUpdatedTimestamp = null;
 
     // --- Authentication Flow ---
@@ -827,17 +877,21 @@ async function saveData(updateTimestamp = false) {
 
                 links = data.links || [];
 
-                if (!chapters.includes(selectedChapter)) {
+                if (!activeMonthFilter && !chapters.includes(selectedChapter)) {
                     selectedChapter = chapters[0] || "Miscellaneous";
                 }
 
                 // Restore saved chapter from localStorage
-const savedChapter = localStorage.getItem('selected_fcpo_chapter');
-if (savedChapter && chapters.includes(savedChapter)) {
-    selectedChapter = savedChapter;
-} else if (!chapters.includes(selectedChapter)) {
-    selectedChapter = chapters[0] || "Miscellaneous";
-}
+                const savedChapter = localStorage.getItem('selected_fcpo_chapter');
+                const savedMonthFilter = localStorage.getItem('fcpo_active_month_filter');
+                
+                if (savedMonthFilter) {
+                    activeMonthFilter = savedMonthFilter;
+                } else if (savedChapter && chapters.includes(savedChapter)) {
+                    selectedChapter = savedChapter;
+                } else if (!chapters.includes(selectedChapter)) {
+                    selectedChapter = chapters[0] || "Miscellaneous";
+                }
 
                 renderAll();
             } else if (!docSnap.metadata.fromCache) {
@@ -847,8 +901,13 @@ if (savedChapter && chapters.includes(savedChapter)) {
     }
 
     function saveNavigationState() {
-    localStorage.setItem('selected_fcpo_chapter', selectedChapter);
-}
+        if (activeMonthFilter) {
+            localStorage.setItem('fcpo_active_month_filter', activeMonthFilter);
+        } else {
+            localStorage.removeItem('fcpo_active_month_filter');
+            localStorage.setItem('selected_fcpo_chapter', selectedChapter);
+        }
+    }
 
     // --- DOM Elements ---
     const editBtn = document.getElementById('edit-btn');
@@ -869,6 +928,7 @@ if (savedChapter && chapters.includes(savedChapter)) {
     const chapterSelect = document.getElementById('chapter-select');
 
     chapterSelect.addEventListener('change', (e) => {
+        activeMonthFilter = null;
         selectedChapter = e.target.value;
         saveNavigationState();
         renderAll();
@@ -886,18 +946,71 @@ if (savedChapter && chapters.includes(savedChapter)) {
         renderStats();
     }
 
-// --- Chapter List Rendering ---
-function renderChapterList() {
+    // --- Date Parsing and Sorting Helpers ---
+    const monthMap = {
+        "jan": 0, "feb": 1, "mar": 2, "apr": 3, "may": 4, "jun": 5,
+        "jul": 6, "aug": 7, "sep": 8, "oct": 9, "nov": 10, "dec": 11
+    };
+
+    function parseTopicDateInfo(text) {
+        if (!text) return { year: 0, month: 0, day: -1, hasDay: false };
+
+        const lower = text.toLowerCase();
+
+        // Match patterns like "12 oct 2026" or "08 Oct 2026"
+        const fullDateMatch = lower.match(/\b(\d{1,2})\s+([a-z]{3})\s+(\d{4})\b/);
+        if (fullDateMatch) {
+            const day = parseInt(fullDateMatch[1], 10);
+            const monthStr = fullDateMatch[2];
+            const year = parseInt(fullDateMatch[3], 10);
+            const month = monthMap[monthStr] !== undefined ? monthMap[monthStr] : 0;
+            return { year, month, day, hasDay: true };
+        }
+
+        // Match patterns with month and year only, e.g., "end Sep 2026", "Jan 2024 uptrend", "Sep 2026 : study"
+        const monthYearMatch = lower.match(/\b([a-z]{3})\s+(\d{4})\b/);
+        if (monthYearMatch) {
+            const monthStr = monthYearMatch[1];
+            const year = parseInt(monthYearMatch[2], 10);
+            const month = monthMap[monthStr] !== undefined ? monthMap[monthStr] : 0;
+            return { year, month, day: -1, hasDay: false };
+        }
+
+        return { year: 0, month: 0, day: -1, hasDay: false };
+    }
+
+    // --- Chapter List Rendering ---
+    function renderChapterList() {
         const chapterList = document.getElementById('chapter-list');
         chapterList.innerHTML = '';
         chapterSelect.innerHTML = '';
+
+        if (activeMonthFilter) {
+            // When a month filter is active, hide chapters list and show only the month clicked
+            const link = document.createElement('a');
+            link.textContent = activeMonthFilter;
+            link.href = '#';
+            link.className = 'list-item active';
+            link.onclick = (e) => {
+                e.preventDefault();
+                // Clicking it again could clear or stay, let's keep it active
+            };
+            chapterList.appendChild(link);
+
+            const option = document.createElement('option');
+            option.value = activeMonthFilter;
+            option.textContent = activeMonthFilter;
+            option.selected = true;
+            chapterSelect.appendChild(option);
+            return;
+        }
 
         const activeTopics = getFilteredTopics();
         const visibleChapters = chapters.filter(ch => 
             activeTopics.some(link => link.chapter === ch)
         );
 
-        const visitedSet = new Set(getVisitedLinks()); // <-- Define visitedSet here
+        const visitedSet = new Set(getVisitedLinks());
 
         visibleChapters.forEach(ch => {
             const chapterLinks = links.filter(item => item.chapter === ch);
@@ -909,12 +1022,13 @@ function renderChapterList() {
             link.href = '#';
             
             let classNames = 'list-item';
-            if (ch === selectedChapter) classNames += ' active';
+            if (ch === selectedChapter && !activeMonthFilter) classNames += ' active';
             if (isChapterVisited) classNames += ' visited';
 
             link.className = classNames;
             link.onclick = (e) => {
                 e.preventDefault();
+                activeMonthFilter = null;
                 selectedChapter = ch;
                 saveNavigationState();
                 renderAll();
@@ -925,7 +1039,7 @@ function renderChapterList() {
             const option = document.createElement('option');
             option.value = ch;
             option.textContent = ch;
-            if (ch === selectedChapter) option.selected = true;
+            if (ch === selectedChapter && !activeMonthFilter) option.selected = true;
             chapterSelect.appendChild(option);
         });
     }
@@ -987,7 +1101,7 @@ function renderChapterList() {
             activeTopics.some(link => link.chapter === ch)
         );
         
-        if (!availableChapters.includes(selectedChapter)) {
+        if (!activeMonthFilter && !availableChapters.includes(selectedChapter)) {
             selectedChapter = availableChapters[0] || "";
         }
 
@@ -1006,7 +1120,7 @@ function renderChapterList() {
             activeTopics.some(link => link.chapter === ch)
         );
         
-        if (!availableChapters.includes(selectedChapter)) {
+        if (!activeMonthFilter && !availableChapters.includes(selectedChapter)) {
             selectedChapter = availableChapters[0] || "";
         }
 
@@ -1015,15 +1129,57 @@ function renderChapterList() {
     });
 
     // --- Links/Topics Rendering ---
-function renderMainLinks() {
+    function renderMainLinks() {
         linkList.innerHTML = '';
         
-        const headerText = selectedChapter ? `Topics : ${selectedChapter}` : "No Chapter Selected";
+        let headerText = "No Chapter Selected";
+        if (activeMonthFilter) {
+            headerText = `Topics : ${activeMonthFilter}`;
+        } else if (selectedChapter) {
+            headerText = `Topics : ${selectedChapter}`;
+        }
         document.getElementById('current-chapter-title').textContent = headerText;
 
-        if (!selectedChapter) return;
+        if (!selectedChapter && !activeMonthFilter) return;
 
-        const filtered = getFilteredTopics().filter(item => item.chapter === selectedChapter);
+        let filtered = [];
+        const baseFilteredTopics = getFilteredTopics();
+
+        if (activeMonthFilter) {
+            // Filter topics belonging to the selected month
+            filtered = baseFilteredTopics.filter(item => {
+                const dateInfo = parseTopicDateInfo(item.text);
+                if (dateInfo.year === 0) return false;
+                const monthsArr = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                const monthStr = monthsArr[dateInfo.month];
+                const formattedMonthYear = `${monthStr} ${dateInfo.year}`;
+                return formattedMonthYear.toLowerCase() === activeMonthFilter.toLowerCase();
+            });
+
+            // Sort chronologically: most recent date on top, month-only entries always at the top
+            filtered.sort((a, b) => {
+                const infoA = parseTopicDateInfo(a.text);
+                const infoB = parseTopicDateInfo(b.text);
+
+                // If one has day and the other doesn't, month-only goes to the top
+                if (infoA.hasDay !== infoB.hasDay) {
+                    return infoA.hasDay ? 1 : -1; // month-only (hasDay: false) comes first
+                }
+
+                // If both have days, sort descending (most recent first)
+                if (infoA.hasDay && infoB.hasDay) {
+                    if (infoA.day !== infoB.day) {
+                        return infoB.day - infoA.day;
+                    }
+                }
+
+                // Fallback secondary sort alphabetically or by text length if needed
+                return 0;
+            });
+        } else {
+            filtered = baseFilteredTopics.filter(item => item.chapter === selectedChapter);
+        }
+
         const visitedSet = new Set(getVisitedLinks());
 
         filtered.forEach(item => {
@@ -1054,12 +1210,13 @@ function renderMainLinks() {
             const option = document.createElement('option');
             option.value = ch;
             option.textContent = ch;
-            if (ch === selectedChapter) option.selected = true;
+            if (!activeMonthFilter && ch === selectedChapter) option.selected = true;
             dropdown.appendChild(option);
         });
     }
 
     document.getElementById('new-chapter').addEventListener('change', (e) => {
+        activeMonthFilter = null;
         selectedChapter = e.target.value;
         saveNavigationState();
         renderAll();
@@ -1088,22 +1245,22 @@ function renderMainLinks() {
             const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
             const toIndex = parseInt(row.dataset.index);
 
-if (!isNaN(fromIndex) && fromIndex !== toIndex) {
-    const [movedItem] = dataArray.splice(fromIndex, 1);
-    dataArray.splice(toIndex, 0, movedItem);
-    if (onReorder) onReorder(fromIndex, toIndex);
-}
+            if (!isNaN(fromIndex) && fromIndex !== toIndex) {
+                const [movedItem] = dataArray.splice(fromIndex, 1);
+                dataArray.splice(toIndex, 0, movedItem);
+                if (onReorder) onReorder(fromIndex, toIndex);
+            }
         });
     }
 
     // --- Manage Links Modal Table ---
     function renderModalTable() {
-        document.querySelector('#modal-overlay .modal-header h3').textContent = `Manage Links : ${selectedChapter}`;
+        document.querySelector('#modal-overlay .modal-header h3').textContent = `Manage Links : ${activeMonthFilter || selectedChapter}`;
         modalTableBody.innerHTML = '';
 
         const filtered = links
             .map((item, originalIndex) => ({ ...item, originalIndex }))
-            .filter(item => item.chapter === selectedChapter);
+            .filter(item => activeMonthFilter ? true : item.chapter === selectedChapter);
 
         filtered.forEach((item, displayIndex) => {
             const row = document.createElement('tr');
@@ -1138,30 +1295,30 @@ if (!isNaN(fromIndex) && fromIndex !== toIndex) {
                 deleteLink(item.originalIndex);
             });
 
-setupDragEvents(row, modalTableBody, filtered, () => {
-    // Clean up originalIndex properties created during mapping
-    const reorderedFiltered = filtered.map(({ originalIndex, ...cleanItem }) => cleanItem);
+            setupDragEvents(row, modalTableBody, filtered, () => {
+                const reorderedFiltered = filtered.map(({ originalIndex, ...cleanItem }) => cleanItem);
 
-    // Replace topics of the current chapter in order, keeping other chapters intact
-    let filterIdx = 0;
-    links = links.map(item => {
-        if (item.chapter === selectedChapter) {
-            return reorderedFiltered[filterIdx++];
-        }
-        return item;
-    });
+                let filterIdx = 0;
+                links = links.map(item => {
+                    if (activeMonthFilter || item.chapter === selectedChapter) {
+                        return reorderedFiltered[filterIdx++];
+                    }
+                    return item;
+                });
 
-    saveData(true);
-    renderAll();
-    renderModalTable();
-});
+                saveData(true);
+                renderAll();
+                renderModalTable();
+            });
             modalTableBody.appendChild(row);
         });
     }
 
     function changeLinkChapter(index, newChapter) {
         links[index].chapter = newChapter;
-        selectedChapter = newChapter;
+        if (!activeMonthFilter) {
+            selectedChapter = newChapter;
+        }
         saveNavigationState();
         saveData(true);
         renderAll();
@@ -1274,28 +1431,28 @@ setupDragEvents(row, modalTableBody, filtered, () => {
         if (event.target === duplicateModalOverlay) duplicateModalOverlay.style.display = 'none';
     });
 
-function editLink(index) {
-    const item = links[index];
-    const newText = prompt("Edit display text:", item.text);
-    if (newText === null) return;
+    function editLink(index) {
+        const item = links[index];
+        const newText = prompt("Edit display text:", item.text);
+        if (newText === null) return;
 
-    let newUrl = prompt("Edit URL:", item.url);
-    if (newUrl === null) return;
+        let newUrl = prompt("Edit URL:", item.url);
+        if (newUrl === null) return;
 
-    if (newUrl && !/^https?:\/\//i.test(newUrl)) newUrl = 'https://' + newUrl;
+        if (newUrl && !/^https?:\/\//i.test(newUrl)) newUrl = 'https://' + newUrl;
 
-    if (newText.trim() && newUrl.trim()) {
-        links[index] = { 
-            text: newText.trim(), 
-            url: newUrl.trim(), 
-            chapter: item.chapter, 
-            color: 'blue' 
-        };
-        saveData(true);
-        renderAll();
-        renderModalTable();
+        if (newText.trim() && newUrl.trim()) {
+            links[index] = { 
+                text: newText.trim(), 
+                url: newUrl.trim(), 
+                chapter: item.chapter, 
+                color: 'blue' 
+            };
+            saveData(true);
+            renderAll();
+            renderModalTable();
+        }
     }
-}
 
     function deleteLink(index) {
         links.splice(index, 1);
@@ -1342,37 +1499,38 @@ function editLink(index) {
         renderChapterModalTable();
     }
 
-function deleteChapter(chapterName) {
-    if (chapterName === "Miscellaneous") {
-        alert("The 'Miscellaneous' chapter cannot be deleted.");
-        return;
+    function deleteChapter(chapterName) {
+        if (chapterName === "Miscellaneous") {
+            alert("The 'Miscellaneous' chapter cannot be deleted.");
+            return;
+        }
+
+        if (!chapters.includes("Miscellaneous")) {
+            chapters.push("Miscellaneous");
+        }
+
+        links.forEach(item => {
+            if (item.chapter === chapterName) item.chapter = "Miscellaneous";
+        });
+
+        chapters = chapters.filter(ch => ch !== chapterName);
+
+        if (selectedChapter === chapterName) selectedChapter = "Miscellaneous";
+
+        saveData(true);
+        renderChapterModalTable();
     }
-
-    // Ensure 'Miscellaneous' exists in chapters array
-    if (!chapters.includes("Miscellaneous")) {
-        chapters.push("Miscellaneous");
-    }
-
-    links.forEach(item => {
-        if (item.chapter === chapterName) item.chapter = "Miscellaneous";
-    });
-
-    chapters = chapters.filter(ch => ch !== chapterName);
-
-    if (selectedChapter === chapterName) selectedChapter = "Miscellaneous";
-
-    saveData(true);
-    renderChapterModalTable();
-}
 
     // --- Stats Modal Logic ---
     const statsModalOverlay = document.getElementById('stats-modal-overlay');
     const closeStatsModalBtn = document.getElementById('close-stats-modal-btn');
     const statsBtnDesktop = document.getElementById('stats-btn-desktop');
     const statsBtnMobile = document.getElementById('stats-btn-mobile');
+    const statsMonthFiltersContainer = document.getElementById('stats-month-filters');
 
     function openStatsModal() {
         statsModalOverlay.style.display = 'flex';
+        renderStatsMonthFilters();
         history.pushState({ modalOpen: true }, '', '#stats');
     }
 
@@ -1395,43 +1553,103 @@ function deleteChapter(chapterName) {
         statsModalOverlay.style.display = 'none';
     });
 
-    function formatLastUpdate(timestamp) {
-    if (!timestamp) return "Last update : Never";
+    function renderStatsMonthFilters() {
+        statsMonthFiltersContainer.innerHTML = '';
 
-    const date = new Date(timestamp);
-    const day = String(date.getDate()).padStart(2, '0');
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const month = months[date.getMonth()];
-    const year = date.getFullYear();
+        // Extract all unique months and years from links
+        // Group by year (descending), months (chronological or custom order)
+        const yearMap = {};
+        const monthsArr = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-    let hours = date.getHours();
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12 || 12;
-    const timeStr = `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+        links.forEach(item => {
+            const dateInfo = parseTopicDateInfo(item.text);
+            if (dateInfo.year > 0) {
+                if (!yearMap[dateInfo.year]) {
+                    yearMap[dateInfo.year] = new Set();
+                }
+                yearMap[dateInfo.year].add(dateInfo.month);
+            }
+        });
 
-    const now = Date.now();
-    const diffMs = now - timestamp;
-    const diffMinutes = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    const diffMonths = Math.floor(diffDays / 30);
+        const sortedYears = Object.keys(yearMap).sort((a, b) => b - a);
 
-    let durationStr = "";
-    if (diffMinutes < 1) {
-        durationStr = "just now";
-    } else if (diffMinutes < 120) {
-        durationStr = `${diffMinutes} minutes ago`;
-    } else if (diffHours <= 48) {
-        durationStr = `${diffHours} hours ago`;
-    } else if (diffDays <= 60) {
-        durationStr = `${diffDays} days ago`;
-    } else {
-        durationStr = `${Math.max(1, diffMonths)} months ago`;
+        if (sortedYears.length === 0) {
+            statsMonthFiltersContainer.innerHTML = '<span style="color: #666; font-size: 12px;">No dated topics found.</span>';
+            return;
+        }
+
+        sortedYears.forEach(year => {
+            const yearGroupDiv = document.createElement('div');
+            yearGroupDiv.className = 'stats-year-group';
+
+            const yearStrong = document.createElement('strong');
+            yearStrong.textContent = `${year} : `;
+            yearGroupDiv.appendChild(yearStrong);
+
+            const monthBtnGroup = document.createElement('div');
+            monthBtnGroup.className = 'stats-month-btn-group';
+
+            // Sort months descending or ascending? Let's do chronological ascending or descending (e.g., Aug, Sep, Oct)
+            const sortedMonths = Array.from(yearMap[year]).sort((a, b) => a - b);
+
+            sortedMonths.forEach(monthIdx => {
+                const monthName = monthsArr[monthIdx];
+                const monthBtn = document.createElement('button');
+                monthBtn.className = 'month-filter-btn';
+                monthBtn.textContent = `(${monthName})`;
+
+                monthBtn.addEventListener('click', () => {
+                    activeMonthFilter = `${monthName} ${year}`;
+                    saveNavigationState();
+                    closeStatsModal();
+                    renderAll();
+                });
+
+                monthBtnGroup.appendChild(monthBtn);
+            });
+
+            yearGroupDiv.appendChild(monthBtnGroup);
+            statsMonthFiltersContainer.appendChild(yearGroupDiv);
+        });
     }
 
-    return `Last update : ${day} ${month} ${year} , ${timeStr}<br>( ${durationStr} )`;
-}
+    function formatLastUpdate(timestamp) {
+        if (!timestamp) return "Last update : Never";
+
+        const date = new Date(timestamp);
+        const day = String(date.getDate()).padStart(2, '0');
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const month = months[date.getMonth()];
+        const year = date.getFullYear();
+
+        let hours = date.getHours();
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12 || 12;
+        const timeStr = `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+
+        const now = Date.now();
+        const diffMs = now - timestamp;
+        const diffMinutes = Math.floor(diffMs / (1000 * 60));
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        const diffMonths = Math.floor(diffDays / 30);
+
+        let durationStr = "";
+        if (diffMinutes < 1) {
+            durationStr = "just now";
+        } else if (diffMinutes < 120) {
+            durationStr = `${diffMinutes} minutes ago`;
+        } else if (diffHours <= 48) {
+            durationStr = `${diffHours} hours ago`;
+        } else if (diffDays <= 60) {
+            durationStr = `${diffDays} days ago`;
+        } else {
+            durationStr = `${Math.max(1, diffMonths)} months ago`;
+        }
+
+        return `Last update : ${day} ${month} ${year} , ${timeStr}<br>( ${durationStr} )`;
+    }
 
     function renderStats() {
         const total = links.length;
@@ -1546,28 +1764,25 @@ function deleteChapter(chapterName) {
         });
     }
 
-function removeDuplicateItem(localIndex) {
-    const currentGroup = duplicateGroups[currentGroupIndex];
-    const itemToRemove = currentGroup[localIndex];
+    function removeDuplicateItem(localIndex) {
+        const currentGroup = duplicateGroups[currentGroupIndex];
+        const itemToRemove = currentGroup[localIndex];
 
-    // Remove from main links array
-    links = links.filter((_, idx) => idx !== itemToRemove.globalIndex);
+        links = links.filter((_, idx) => idx !== itemToRemove.globalIndex);
 
-    // Re-map global indices across all remaining duplicate groups
-    duplicateGroups.forEach(group => {
-        group.forEach(item => {
-            if (item.globalIndex > itemToRemove.globalIndex) {
-                item.globalIndex--;
-            }
+        duplicateGroups.forEach(group => {
+            group.forEach(item => {
+                if (item.globalIndex > itemToRemove.globalIndex) {
+                    item.globalIndex--;
+                }
+            });
         });
-    });
 
-    // Remove from current group
-    currentGroup.splice(localIndex, 1);
+        currentGroup.splice(localIndex, 1);
 
-    saveData(true);
-    showDuplicateGroupModal();
-}
+        saveData(true);
+        showDuplicateGroupModal();
+    }
 </script>
 </body>
 </html>
