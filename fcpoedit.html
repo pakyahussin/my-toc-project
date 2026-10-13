@@ -749,7 +749,7 @@
                 <label for="topic-search-input">filter topics :</label>
                 <div class="topic-search-row">
                     <input type="text" id="topic-search-input" class="topic-search-input" placeholder="Type to filter...">
-                    <button id="clear-search-btn" class="clear-search-btn" disabled>clear</button>
+                    <button id="clear-search-btn" class="clear-search-btn">clear</button>
                 </div>
             </div>
 
@@ -1091,42 +1091,6 @@ async function saveData(updateTimestamp = false) {
         return result;
     }
 
-    topicSearchInput.addEventListener('input', (e) => {
-        topicSearchQuery = e.target.value;
-        clearSearchBtn.disabled = !topicSearchQuery.trim();
-        saveUserSettings();
-        
-        const activeTopics = getFilteredTopics();
-        const availableChapters = chapters.filter(ch => 
-            activeTopics.some(link => link.chapter === ch)
-        );
-        
-        if (!activeMonthFilter && !availableChapters.includes(selectedChapter)) {
-            selectedChapter = availableChapters[0] || "";
-        }
-
-        saveNavigationState();
-        renderAll();
-    });
-
-    clearSearchBtn.addEventListener('click', () => {
-        topicSearchQuery = "";
-        topicSearchInput.value = "";
-        clearSearchBtn.disabled = true;
-        saveUserSettings();
-
-        const activeTopics = getFilteredTopics();
-        const availableChapters = chapters.filter(ch => 
-            activeTopics.some(link => link.chapter === ch)
-        );
-        
-        if (!activeMonthFilter && !availableChapters.includes(selectedChapter)) {
-            selectedChapter = availableChapters[0] || "";
-        }
-
-        saveNavigationState();
-        renderAll();
-    });
 
     // --- Links/Topics Rendering ---
     function renderMainLinks() {
@@ -1324,6 +1288,50 @@ async function saveData(updateTimestamp = false) {
         renderAll();
         renderModalTable();
     }
+
+    function updateClearButtonState() {
+        const hasQuery = topicSearchQuery.trim() !== '';
+        const hasMonthFilter = activeMonthFilter !== null;
+        clearSearchBtn.disabled = !hasQuery && !hasMonthFilter;
+    }
+
+    topicSearchInput.addEventListener('input', (e) => {
+        topicSearchQuery = e.target.value;
+        updateClearButtonState();
+        saveUserSettings();
+        
+        const activeTopics = getFilteredTopics();
+        const availableChapters = chapters.filter(ch => 
+            activeTopics.some(link => link.chapter === ch)
+        );
+        
+        if (!activeMonthFilter && !availableChapters.includes(selectedChapter)) {
+            selectedChapter = availableChapters[0] || "";
+        }
+
+        saveNavigationState();
+        renderAll();
+    });
+
+    clearSearchBtn.addEventListener('click', () => {
+        topicSearchQuery = "";
+        topicSearchInput.value = "";
+        activeMonthFilter = null; // Clear month filter
+        updateClearButtonState();
+        saveUserSettings();
+
+        const activeTopics = getFilteredTopics();
+        const availableChapters = chapters.filter(ch => 
+            activeTopics.some(link => link.chapter === ch)
+        );
+        
+        if (!activeMonthFilter && !availableChapters.includes(selectedChapter)) {
+            selectedChapter = availableChapters[0] || "";
+        }
+
+        saveNavigationState();
+        renderAll();
+    });
 
     // --- Manage Chapters Modal Table ---
     function renderChapterModalTable() {
@@ -1600,6 +1608,7 @@ async function saveData(updateTimestamp = false) {
 
                 monthBtn.addEventListener('click', () => {
                     activeMonthFilter = `${monthName} ${year}`;
+                    updateClearButtonState();
                     saveNavigationState();
                     closeStatsModal();
                     renderAll();
