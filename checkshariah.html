@@ -136,6 +136,16 @@
             line-height: 1.6;
             color: #333;
         }
+
+        /* Hyperlink styling (no underline by default, underline on hover) */
+        .info-text a {
+            color: #007bff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .info-text a:hover {
+            text-decoration: underline;
+        }
         .checkbox-grid {
             display: grid;
             grid-template-columns: auto auto;
@@ -150,6 +160,49 @@
             gap: 8px;
             cursor: pointer;
             margin: 0;
+        }
+        /* Auto-resizing Modal (fits screen, no vertical scrolling) */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 95vw;
+            max-height: 95vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            box-sizing: border-box;
+        }
+        .modal-content img {
+            max-width: 100%;
+            max-height: calc(95vh - 40px);
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+        .close-btn {
+            position: absolute;
+            top: 5px;
+            right: 12px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #333;
+            z-index: 1010;
         }
     </style>
 </head>
@@ -171,6 +224,8 @@
                 <div>- Islamicly requires login</div>
                 <div>- all 4 others does not require login</div>
                 <div>- MuslimXChange has a limit search per day (if lebih , use incognito)</div>
+                <br>
+                <div>- <a href="javascript:void(0)" onclick="openModal()">what to do if keluar only one popup ? (not multiple popups)</a></div>
             </div>
             <div class="checkbox-grid">
                 <label><input type="checkbox" id="chkIslamicly" onchange="savePreferences()"> Islamicly</label>
@@ -451,6 +506,25 @@
             }
             renderAndFilterTable();
         });
+
+        window.openModal = function() {
+            document.getElementById('imageModal').style.display = 'flex';
+        }
+
+        window.closeModal = function(e) {
+            // Closes when clicking the close button or clicking outside the content area
+            if (e.target.id === 'imageModal' || e.target.classList.contains('close-btn')) {
+                document.getElementById('imageModal').style.display = 'none';
+            }
+        }
     </script>
+
+    <!-- Modal Popup -->
+    <div id="imageModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal(event)">&times;</span>
+            <img src="https://pakyanotes.com/media/editor/1791857773800-image.png" alt="Allow Popups Help">
+        </div>
+    </div>
 </body>
 </html>
