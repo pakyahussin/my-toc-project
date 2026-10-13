@@ -205,15 +205,33 @@
             z-index: 1010;
         }
 
-        /* Mobile specific adjustments */
+        /* Mobile specific adjustments (keeps desktop completely untouched) */
         @media screen and (max-width: 768px) {
             body {
-                overflow-x: auto;
+                padding: 15px 10px;
+                align-items: stretch;
+                overflow-x: hidden;
+            }
+            .main-container {
+                width: 100%;
+            }
+            .container {
+                width: 100%;
+                padding: 15px;
+            }
+            .info-box {
+                flex-direction: column;
+                gap: 20px;
+            }
+            .checkbox-grid {
+                width: 100%;
+                grid-template-columns: 1fr 1fr;
             }
             .table-container {
                 width: 100%;
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
+                padding: 10px 0;
             }
         }
     </style>
@@ -304,10 +322,8 @@
 
         let globalStocks = [];
         
-        // Load saved sort state from localStorage or default to newest date/time top
         let currentSort = JSON.parse(localStorage.getItem('stockSortState')) || { column: 'date', direction: 'desc' };
 
-        // Load link preferences from localStorage or defaults
         function loadPreferences() {
             let prefs = JSON.parse(localStorage.getItem('stockLinkPreferences'));
             if (!prefs) {
@@ -392,7 +408,6 @@
             renderAndFilterTable();
         }
 
-        // Load saved threshold from localStorage or default to 4
         let savedThreshold = localStorage.getItem('shariahThreshold') || '4';
         document.getElementById('shariahThreshold').value = savedThreshold;
 
@@ -404,13 +419,8 @@
 
         function renderAndFilterTable() {
             let query = document.getElementById('stockInput').value.trim().toLowerCase();
-            
-            // Filter by name of stock (ticker)
             let filtered = globalStocks.filter(item => item.ticker.toLowerCase().includes(query));
             
-            // If filter returns nothing, the table will also return nothing
-
-            // Sort stocks
             filtered.sort((a, b) => {
                 let valA, valB;
                 if (currentSort.column === 'name') {
@@ -442,7 +452,6 @@
             tbody.innerHTML = '';
             
             let threshold = parseInt(document.getElementById('shariahThreshold').value, 10);
-            let serviceNames = ["Islamicly", "Zoya", "Musaffa", "MuslimXChange", "SP-Funds.Com"];
 
             stocks.forEach(item => {
                 let row = tbody.insertRow();
@@ -519,31 +528,10 @@
 
             let textToCopy = `Shariah : ${shariahCount} / 5\n\nList shariah : ${listStr}\n\nLast check : ${lastCheckStr}`;
 
-            navigator.clipboard.writeText(textToCopy).then(() => {
-                // Optional: brief visual feedback if desired
-            }).catch(err => {
+            navigator.clipboard.writeText(textToCopy).catch(err => {
                 console.error('Failed to copy: ', err);
             });
         };
-
-        function formatCustomDate(dateObj) {
-            const d = new Date(dateObj);
-            if (isNaN(d.getTime())) return dateObj; // fallback if invalid
-
-            const day = String(d.getDate()).padStart(2, '0');
-            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            const month = months[d.getMonth()];
-            const year = String(d.getFullYear()).slice(-2);
-
-            let hours = d.getHours();
-            const minutes = String(d.getMinutes()).padStart(2, '0');
-            const ampm = hours >= 12 ? 'PM' : 'AM';
-            hours = hours % 12;
-            hours = hours ? hours : 12; // the hour '0' should be '12'
-            const strHours = String(hours).padStart(2, '0');
-
-            return `${day}-${month}-${year} , ${strHours}:${minutes} ${ampm}`;
-        }
 
         function updateSortIndicators() {
             document.getElementById('sortNameIcon').textContent = '';
@@ -584,7 +572,6 @@
         }
 
         window.closeModal = function(e) {
-            // Closes when clicking the close button or clicking outside the content area
             if (e.target.id === 'imageModal' || e.target.classList.contains('close-btn')) {
                 document.getElementById('imageModal').style.display = 'none';
             }
