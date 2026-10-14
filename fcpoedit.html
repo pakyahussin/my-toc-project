@@ -498,6 +498,87 @@
             margin: 0 auto; /* Added to center the page horizontally */
         }
 
+        /* Daily Target Modal Custom Styles */
+        .target-btn-red {
+            background-color: #ff4d4d;
+            color: #ffffff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .target-btn-red:hover {
+            background-color: #e60000;
+        }
+
+        .target-btn-blue {
+            background-color: #007bff;
+            color: #ffffff;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .target-btn-blue:hover {
+            background-color: #0056b3;
+        }
+
+        .target-logs-list {
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .target-date-row {
+            margin-bottom: 10px;
+        }
+
+        .target-date-header {
+            cursor: pointer;
+            user-select: none;
+            font-weight: bold;
+        }
+
+        .target-topics-list {
+            margin-top: 10px;
+            margin-left: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            font-size: 13px;
+        }
+
+        .target-topics-list a {
+            color: #0000ee;
+            text-decoration: none;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .target-topics-list a:hover {
+            text-decoration: underline;
+        }
+
+        .status-done {
+            color: #008000;
+            font-weight: bold;
+        }
+
+        .status-not-done {
+            color: red;
+            font-weight: bold;
+        }
+
         /* Mobile Styles */
         @media (max-width: 768px) {
             body {
@@ -760,11 +841,30 @@
 
             <br>
 
-            <div id="stats-visited">Visited : 0 ( 0.0 % )</div>
+            <div id="stats-visited">Visited : 0 ( 0.0 % ) - <a href="#" id="how-to-use-link">how to use ?</a></div>
             <div id="stats-unvisited">Unvisited : 0 ( 0.0 % )</div>
             <br>
             <button id="reset-visited-btn" class="reset-visited-btn">Reset all visited links</button>
         </div>
+    </div>
+</div>
+
+<!-- Daily Target Modal -->
+<div class="modal-overlay" id="target-modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><strong>Daily Target</strong></h3>
+            <button class="close-btn" id="close-target-modal-btn">&times;</button>
+        </div>
+        <div style="font-size: 14px; margin-bottom: 12px;">
+            set daily target : contoh aku nak study <span id="target-num-display">5</span> video / nota sehari
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button id="btn-add-target" class="target-btn-red">+1 daily target</button>
+            <button id="btn-sub-target" class="target-btn-blue">-1 daily target</button>
+        </div>
+        <br><br>
+        <div id="daily-target-logs" class="target-logs-list"></div>
     </div>
 </div>
 
@@ -811,6 +911,30 @@
     let selectedChapter = "Miscellaneous";
     let activeMonthFilter = null; // Stores currently selected month filter (e.g., "Aug 2026") if active
     let lastUpdatedTimestamp = null;
+
+    function getLocalDateString(d = new Date()) {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function formatDisplayDate(dateStr) {
+        const parts = dateStr.split('-');
+        if (parts.length !== 3) return dateStr;
+        const year = parts[0];
+        const monthIdx = parseInt(parts[1], 10) - 1;
+        const day = parts[2];
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        return `${day} ${months[monthIdx]} ${year}`;
+    }
+
+    function initStartDate() {
+        if (!localStorage.getItem('fcpo_daily_target_start_date')) {
+            localStorage.setItem('fcpo_daily_target_start_date', getLocalDateString());
+        }
+    }
+    initStartDate();
 
     // --- Authentication Flow ---
     const loginOverlay = document.getElementById('login-overlay');
@@ -1055,11 +1179,171 @@ async function saveData(updateTimestamp = false) {
             visited.push(url);
             localStorage.setItem('fcpo_visited_links', JSON.stringify(visited));
         }
+
+        const todayStr = getLocalDateString();
+        const history = JSON.parse(localStorage.getItem('fcpo_visited_links_history') || '{}');
+        if (!history[todayStr]) {
+            history[todayStr] = [];
+        }
+        if (!history[todayStr].includes(url)) {
+            history[todayStr].push(url);
+            localStorage.setItem('fcpo_visited_links_history', JSON.stringify(history));
+        }
     }
 
     function resetVisitedLinks() {
         localStorage.removeItem('fcpo_visited_links');
+        localStorage.removeItem('fcpo_visited_links_history');
+        localStorage.setItem('fcpo_daily_target_start_date', getLocalDateString());
         renderAll();
+        const targetModalOverlay = document.getElementById('target-modal-overlay');
+        if (targetModalOverlay.style.display === 'flex') {
+            renderDailyTargetLogs();
+        }
+    }
+
+    const targetModalOverlay = document.getElementById('target-modal-overlay');
+    const closeTargetModalBtn = document.getElementById('close-target-modal-btn');
+    const howToUseLink = document.getElementById('how-to-use-link');
+    const btnAddTarget = document.getElementById('btn-add-target');
+    const btnSubTarget = document.getElementById('btn-sub-target');
+    const dailyTargetLogs = document.getElementById('daily-target-logs');
+
+    function openTargetModal() {
+        statsModalOverlay.style.display = 'none';
+        targetModalOverlay.style.display = 'flex';
+        history.pushState({ targetModalOpen: true }, '', '#fcpo-daily-target');
+        renderDailyTargetLogs();
+    }
+
+    function closeTargetModal() {
+        if (targetModalOverlay.style.display === 'flex') {
+            if (location.hash === '#fcpo-daily-target') {
+                history.back();
+            } else {
+                targetModalOverlay.style.display = 'none';
+            }
+        }
+    }
+
+    if (howToUseLink) {
+        howToUseLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            openTargetModal();
+        });
+    }
+
+    closeTargetModalBtn.addEventListener('click', closeTargetModal);
+
+    window.addEventListener('click', (event) => {
+        if (event.target === targetModalOverlay) closeTargetModal();
+    });
+
+    function getDailyTarget() {
+        const saved = localStorage.getItem('fcpo_daily_target_value');
+        return saved !== null ? parseInt(saved, 10) : 5;
+    }
+
+    function setDailyTarget(val) {
+        if (val < 1) val = 1;
+        localStorage.setItem('fcpo_daily_target_value', val);
+        renderDailyTargetLogs();
+    }
+
+    btnAddTarget.addEventListener('click', () => {
+        setDailyTarget(getDailyTarget() + 1);
+    });
+
+    btnSubTarget.addEventListener('click', () => {
+        setDailyTarget(getDailyTarget() - 1);
+    });
+
+    function renderDailyTargetLogs() {
+        dailyTargetLogs.innerHTML = '';
+        const target = getDailyTarget();
+
+        const targetDisplay = document.getElementById('target-num-display');
+        if (targetDisplay) {
+            targetDisplay.textContent = target;
+        }
+
+        const history = JSON.parse(localStorage.getItem('fcpo_visited_links_history') || '{}');
+        const startDateStr = localStorage.getItem('fcpo_daily_target_start_date') || getLocalDateString();
+        const todayStr = getLocalDateString();
+
+        const startDate = new Date(startDateStr);
+        const todayDate = new Date(todayStr);
+
+        let cur = new Date(startDate);
+        const datesList = [];
+
+        while (cur <= todayDate) {
+            datesList.push(getLocalDateString(cur));
+            cur.setDate(cur.getDate() + 1);
+        }
+
+        datesList.forEach(dateStr => {
+            const dayUrls = history[dateStr] || [];
+            const visitedToday = dayUrls.length;
+            const isToday = (dateStr === todayStr);
+
+            let statusHtml = '';
+            if (visitedToday >= target) {
+                statusHtml = `<span class="status-done"> - DONE ✔</span>`;
+            } else {
+                if (!isToday) {
+                    statusHtml = `<span class="status-not-done"> - NOT DONE ❌</span>`;
+                }
+            }
+
+            const row = document.createElement('div');
+            row.className = 'target-date-row';
+
+            const header = document.createElement('div');
+            header.className = 'target-date-header';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'target-topics-list';
+
+            let isOpen = isToday;
+            
+            const updateHeaderHtml = () => {
+                header.innerHTML = `${isOpen ? '▼' : '►'} ${formatDisplayDate(dateStr)} : ${visitedToday} ${statusHtml}`;
+            };
+
+            updateHeaderHtml();
+            contentDiv.style.display = isOpen ? 'flex' : 'none';
+
+            if (dayUrls.length === 0) {
+                const noTopic = document.createElement('div');
+                noTopic.style.color = '#666';
+                noTopic.style.fontStyle = 'italic';
+                noTopic.textContent = 'No topics clicked';
+                contentDiv.appendChild(noTopic);
+            } else {
+                dayUrls.forEach(url => {
+                    const linkObj = links.find(l => l.url === url);
+                    const topicTitle = linkObj ? linkObj.text : url;
+                    
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.textContent = topicTitle;
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
+                    contentDiv.appendChild(a);
+                });
+            }
+
+            header.addEventListener('click', () => {
+                isOpen = !isOpen;
+                contentDiv.style.display = isOpen ? 'flex' : 'none';
+                updateHeaderHtml();
+            });
+
+            row.appendChild(header);
+            row.appendChild(contentDiv);
+            dailyTargetLogs.appendChild(row);
+        });
     }
 
     let topicSearchQuery = "";
@@ -1675,7 +1959,15 @@ async function saveData(updateTimestamp = false) {
         const calcPct = (count) => total > 0 ? ((count / total) * 100).toFixed(1) : "0.0";
 
         document.getElementById('stats-total').textContent = `Total links : ${total}`;
-        document.getElementById('stats-visited').textContent = `Visited : ${visitedCount} ( ${calcPct(visitedCount)} % )`;
+        document.getElementById('stats-visited').innerHTML = `Visited : ${visitedCount} ( ${calcPct(visitedCount)} % ) - <a href="#" id="how-to-use-link">how to use ?</a>`;
+
+            const dynamicHowToUseLink = document.getElementById('how-to-use-link');
+            if (dynamicHowToUseLink) {
+                dynamicHowToUseLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    openTargetModal();
+                });
+            }
         document.getElementById('stats-unvisited').textContent = `Unvisited : ${unvisitedCount} ( ${calcPct(unvisitedCount)} % )`;
         document.getElementById('stats-last-update').innerHTML = formatLastUpdate(lastUpdatedTimestamp);
     }
