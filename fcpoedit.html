@@ -2074,7 +2074,9 @@ async function saveData(updateTimestamp = false) {
     }
 
     document.getElementById('reset-visited-btn').addEventListener('click', () => {
-        resetVisitedLinks();
+        if (confirm("Are you sure you want to reset all visited links?")) {
+            resetVisitedLinks();
+        }
     });
 
     // --- Button Event Listeners ---
