@@ -1560,10 +1560,39 @@ async function saveData(updateTimestamp = false) {
         if (activeMonthFilter === "Random Notes") {
             if (!randomNotesIndices) generateRandomNotesIndices();
             filtered = randomNotesIndices.map(origIdx => ({ ...links[origIdx], originalIndex: origIdx }));
+        } else if (activeMonthFilter) {
+            // Filter topics belonging to the selected month using the active search/month criteria
+            const baseFilteredTopics = getFilteredTopics();
+            filtered = baseFilteredTopics
+                .map((item) => ({ ...item, originalIndex: links.indexOf(item) }))
+                .filter(item => {
+                    const dateInfo = parseTopicDateInfo(item.text);
+                    if (dateInfo.year === 0) return false;
+                    const monthsArr = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                    const monthStr = monthsArr[dateInfo.month];
+                    const formattedMonthYear = `${monthStr} ${dateInfo.year}`;
+                    return formattedMonthYear.toLowerCase() === activeMonthFilter.toLowerCase();
+                });
+
+            // Sort chronologically using the exact same sort logic as the main view
+            filtered.sort((a, b) => {
+                const infoA = parseTopicDateInfo(a.text);
+                const infoB = parseTopicDateInfo(b.text);
+
+                if (infoA.hasDay !== infoB.hasDay) {
+                    return infoA.hasDay ? 1 : -1;
+                }
+                if (infoA.hasDay && infoB.hasDay) {
+                    if (infoA.day !== infoB.day) {
+                        return infoB.day - infoA.day;
+                    }
+                }
+                return 0;
+            });
         } else {
             filtered = links
                 .map((item, originalIndex) => ({ ...item, originalIndex }))
-                .filter(item => activeMonthFilter ? true : item.chapter === selectedChapter);
+                .filter(item => item.chapter === selectedChapter);
         }
 
         filtered.forEach((item, displayIndex) => {
