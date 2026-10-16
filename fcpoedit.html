@@ -1659,9 +1659,7 @@ async function saveData(updateTimestamp = false) {
     }
 
     function updateClearButtonState() {
-        const hasQuery = topicSearchQuery.trim() !== '';
-        const hasMonthFilter = activeMonthFilter !== null;
-        clearSearchBtn.disabled = !hasQuery && !hasMonthFilter;
+        clearSearchBtn.disabled = false;
     }
 
     topicSearchInput.addEventListener('input', (e) => {
