@@ -910,6 +910,7 @@
     let links = [];
     let selectedChapter = "Miscellaneous";
     let activeMonthFilter = null; // Stores currently selected month filter (e.g., "Aug 2026") if active
+    let randomNotesIndices = null;
     let lastUpdatedTimestamp = null;
 
     function getLocalDateString(d = new Date()) {
@@ -1008,8 +1009,12 @@ async function saveData(updateTimestamp = false) {
                 // Restore saved chapter from localStorage
                 const savedChapter = localStorage.getItem('selected_fcpo_chapter');
                 const savedMonthFilter = localStorage.getItem('fcpo_active_month_filter');
+                const savedRandomIndices = localStorage.getItem('fcpo_random_notes_indices');
                 
-                if (savedMonthFilter) {
+                if (savedMonthFilter === "Random Notes" && savedRandomIndices) {
+                    activeMonthFilter = "Random Notes";
+                    randomNotesIndices = JSON.parse(savedRandomIndices);
+                } else if (savedMonthFilter) {
                     activeMonthFilter = savedMonthFilter;
                 } else if (savedChapter && chapters.includes(savedChapter)) {
                     selectedChapter = savedChapter;
@@ -1024,11 +1029,34 @@ async function saveData(updateTimestamp = false) {
         });
     }
 
+    function generateRandomNotesIndices() {
+        const total = links.length;
+        if (total === 0) {
+            randomNotesIndices = [];
+            return;
+        }
+        const count = Math.min(10, total);
+        const indices = Array.from({ length: total }, (_, i) => i);
+        // Shuffle array
+        for (let i = indices.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [indices[i], indices[j]] = [indices[j], indices[i]];
+        }
+        randomNotesIndices = indices.slice(0, count);
+        saveNavigationState();
+    }
+
     function saveNavigationState() {
         if (activeMonthFilter) {
             localStorage.setItem('fcpo_active_month_filter', activeMonthFilter);
+            if (activeMonthFilter === "Random Notes" && randomNotesIndices) {
+                localStorage.setItem('fcpo_random_notes_indices', JSON.stringify(randomNotesIndices));
+            } else {
+                localStorage.removeItem('fcpo_random_notes_indices');
+            }
         } else {
             localStorage.removeItem('fcpo_active_month_filter');
+            localStorage.removeItem('fcpo_random_notes_indices');
             localStorage.setItem('selected_fcpo_chapter', selectedChapter);
         }
     }
@@ -1381,7 +1409,9 @@ async function saveData(updateTimestamp = false) {
         linkList.innerHTML = '';
         
         let headerText = "No Chapter Selected";
-        if (activeMonthFilter) {
+        if (activeMonthFilter === "Random Notes") {
+            headerText = `Topics : Random Notes`;
+        } else if (activeMonthFilter) {
             headerText = `Topics : ${activeMonthFilter}`;
         } else if (selectedChapter) {
             headerText = `Topics : ${selectedChapter}`;
@@ -1393,7 +1423,12 @@ async function saveData(updateTimestamp = false) {
         let filtered = [];
         const baseFilteredTopics = getFilteredTopics();
 
-        if (activeMonthFilter) {
+        if (activeMonthFilter === "Random Notes") {
+            if (!randomNotesIndices) {
+                generateRandomNotesIndices();
+            }
+            filtered = randomNotesIndices.map(idx => links[idx]).filter(item => item !== undefined);
+        } else if (activeMonthFilter) {
             // Filter topics belonging to the selected month
             filtered = baseFilteredTopics.filter(item => {
                 const dateInfo = parseTopicDateInfo(item.text);
@@ -1449,6 +1484,21 @@ async function saveData(updateTimestamp = false) {
 
             linkList.appendChild(anchor);
         });
+
+        // Add "Give me 10 more random notes" button if Random Notes is active
+        if (activeMonthFilter === "Random Notes") {
+            const moreBtn = document.createElement('button');
+            moreBtn.textContent = "Give me 10 more random notes";
+            moreBtn.style.marginTop = "15px";
+            moreBtn.style.padding = "6px 12px";
+            moreBtn.style.fontSize = "13px";
+            moreBtn.style.cursor = "pointer";
+            moreBtn.addEventListener('click', () => {
+                generateRandomNotesIndices();
+                renderAll();
+            });
+            linkList.appendChild(moreBtn);
+        }
     }
 
     function populateChapterDropdown() {
@@ -1506,9 +1556,15 @@ async function saveData(updateTimestamp = false) {
         document.querySelector('#modal-overlay .modal-header h3').textContent = `Manage Links : ${activeMonthFilter || selectedChapter}`;
         modalTableBody.innerHTML = '';
 
-        const filtered = links
-            .map((item, originalIndex) => ({ ...item, originalIndex }))
-            .filter(item => activeMonthFilter ? true : item.chapter === selectedChapter);
+        let filtered = [];
+        if (activeMonthFilter === "Random Notes") {
+            if (!randomNotesIndices) generateRandomNotesIndices();
+            filtered = randomNotesIndices.map(origIdx => ({ ...links[origIdx], originalIndex: origIdx }));
+        } else {
+            filtered = links
+                .map((item, originalIndex) => ({ ...item, originalIndex }))
+                .filter(item => activeMonthFilter ? true : item.chapter === selectedChapter);
+        }
 
         filtered.forEach((item, displayIndex) => {
             const row = document.createElement('tr');
@@ -1600,9 +1656,11 @@ async function saveData(updateTimestamp = false) {
     clearSearchBtn.addEventListener('click', () => {
         topicSearchQuery = "";
         topicSearchInput.value = "";
-        activeMonthFilter = null; // Clear month filter
+        activeMonthFilter = null; 
+        randomNotesIndices = null;
         updateClearButtonState();
         saveUserSettings();
+        saveNavigationState();
 
         const activeTopics = getFilteredTopics();
         const availableChapters = chapters.filter(ch => 
@@ -1870,7 +1928,7 @@ async function saveData(updateTimestamp = false) {
             return;
         }
 
-        sortedYears.forEach(year => {
+    sortedYears.forEach(year => {
             const yearGroupDiv = document.createElement('div');
             yearGroupDiv.className = 'stats-year-group';
 
@@ -1881,7 +1939,6 @@ async function saveData(updateTimestamp = false) {
             const monthBtnGroup = document.createElement('div');
             monthBtnGroup.className = 'stats-month-btn-group';
 
-            // Sort months descending or ascending? Let's do chronological ascending or descending (e.g., Aug, Sep, Oct)
             const sortedMonths = Array.from(yearMap[year]).sort((a, b) => a - b);
 
             sortedMonths.forEach(monthIdx => {
@@ -1903,7 +1960,22 @@ async function saveData(updateTimestamp = false) {
 
             yearGroupDiv.appendChild(monthBtnGroup);
             statsMonthFiltersContainer.appendChild(yearGroupDiv);
+        }); // <-- sortedYears.forEach properly closed here
+
+        // --- ADDED ONCE AT THE VERY BOTTOM OF THE CONTAINER ---
+        const randomNotesDiv = document.createElement('div');
+        randomNotesDiv.style.marginTop = '8px';
+        randomNotesDiv.innerHTML = `<a href="#" id="stats-random-notes-link" style="color: #0000ee; text-decoration: underline; font-size: 13px;">Random Notes</a>`;
+        randomNotesDiv.querySelector('a').addEventListener('click', (e) => {
+            e.preventDefault();
+            activeMonthFilter = "Random Notes";
+            generateRandomNotesIndices();
+            updateClearButtonState();
+            saveNavigationState();
+            closeStatsModal();
+            renderAll();
         });
+        statsMonthFiltersContainer.appendChild(randomNotesDiv);
     }
 
     function formatLastUpdate(timestamp) {
