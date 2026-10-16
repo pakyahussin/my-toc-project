@@ -1023,6 +1023,7 @@ async function saveData(updateTimestamp = false) {
                 }
 
                 renderAll();
+                updateClearButtonState();
             } else if (!docSnap.metadata.fromCache) {
                 saveData(true);
             }
