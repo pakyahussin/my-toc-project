@@ -311,6 +311,34 @@
             margin: 0;
             display: none;
         }
+
+        /* Autocomplete suggestions */
+        .autocomplete-container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        .suggestions-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ccc;
+            border-top: none;
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 200;
+            display: none;
+        }
+        .suggestion-item {
+            padding: 6px 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .suggestion-item:hover {
+            background-color: #f2f2f2;
+        }
     </style>
 </head>
 <body>
@@ -385,7 +413,10 @@
         </div>
 
         <div class="add-form">
-            <input type="text" id="new-text" placeholder="Display Text">
+            <div class="autocomplete-container">
+                <input type="text" id="new-text" placeholder="Display Text" autocomplete="off">
+                <div id="suggestions-box" class="suggestions-list"></div>
+            </div>
             <input type="text" id="new-url" placeholder="URL (Optional - leave blank if none)">
             <select id="new-classification"></select>
             <button id="add-example-btn">Add New Example</button>
@@ -588,6 +619,55 @@
     const newTextInput = document.getElementById('new-text');
     const newUrlInput = document.getElementById('new-url');
 
+    const suggestionsBox = document.getElementById('suggestions-box');
+
+    newTextInput.addEventListener('input', () => {
+        const query = newTextInput.value.toLowerCase().trim();
+        suggestionsBox.innerHTML = '';
+        
+        if (!query) {
+            suggestionsBox.style.display = 'none';
+            return;
+        }
+
+        const seenTexts = new Set();
+        const matches = examples.filter(item => {
+            const matchesQuery = item.text.toLowerCase().includes(query);
+            if (matchesQuery && !seenTexts.has(item.text)) {
+                seenTexts.add(item.text);
+                return true;
+            }
+            return false;
+        });
+
+        if (matches.length === 0) {
+            suggestionsBox.style.display = 'none';
+            return;
+        }
+
+        matches.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'suggestion-item';
+            div.textContent = item.text;
+            div.addEventListener('click', () => {
+                newTextInput.value = item.text;
+                if (item.url) {
+                    newUrlInput.value = item.url;
+                }
+                suggestionsBox.style.display = 'none';
+            });
+            suggestionsBox.appendChild(div);
+        });
+
+        suggestionsBox.style.display = 'block';
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.autocomplete-container')) {
+            suggestionsBox.style.display = 'none';
+        }
+    });
+
     const editClassificationsBtn = document.getElementById('edit-classifications-btn');
     const classificationModalOverlay = document.getElementById('classification-modal-overlay');
     const closeClassificationModalBtn = document.getElementById('close-classification-modal-btn');
@@ -780,7 +860,7 @@
             row.querySelector('.delete-btn').addEventListener('click', () => {
                 deleteExample(item.originalIndex);
             });
-            
+
             modalTableBody.appendChild(row);
         });
     }
