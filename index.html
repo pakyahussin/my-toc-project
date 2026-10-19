@@ -87,6 +87,10 @@
             margin-top: 0;
         }
 
+        .content-container.hidden-container {
+            display: none !important;
+        }
+
         #current-chapter-title {
             margin-bottom: 20px;
             margin-top: 0;
@@ -525,8 +529,11 @@
                 <label for="topic-search-input">filter topics :</label>
                 <div class="topic-search-row">
                     <input type="text" id="topic-search-input" class="topic-search-input" placeholder="Type to filter..." autocomplete="off">
-                    <button id="clear-search-btn" class="clear-search-btn" disabled>clear</button>
+                    <button id="clear-search-btn" class="clear-search-btn">clear</button>
                 </div>
+            </div>
+            <div style="margin-top: 12px;">
+                <button id="stats-random-notes-link" class="clear-search-btn" style="width: 100%; cursor: pointer;">Random Notes</button>
             </div>
         </div>
 
@@ -612,6 +619,9 @@
 
     let selectedSection = "Miscellaneous";
     let selectedChapter = "Miscellaneous";
+
+    let activeSectionFilter = null; // Can be "Random Notes" or null
+    let randomNotesIndices = null;
 
     const linkList = document.getElementById('link-list');
     const sectionSelect = document.getElementById('section-select');
@@ -699,7 +709,6 @@
         if (savedSearchQuery !== null) {
             topicSearchQuery = savedSearchQuery;
             topicSearchInput.value = topicSearchQuery;
-            clearSearchBtn.disabled = !topicSearchQuery.trim();
         }
     }
 
@@ -839,7 +848,6 @@
 
     topicSearchInput.addEventListener('input', (e) => {
         topicSearchQuery = e.target.value;
-        clearSearchBtn.disabled = !topicSearchQuery.trim();
         saveUserSettings();
         
         const activeTopics = getFilteredTopics();
@@ -861,9 +869,10 @@
     });
 
     clearSearchBtn.addEventListener('click', () => {
+        activeSectionFilter = null;
+        randomNotesIndices = null;
         topicSearchQuery = "";
         topicSearchInput.value = "";
-        clearSearchBtn.disabled = true;
         saveUserSettings();
 
         const activeTopics = getFilteredTopics();
@@ -908,6 +917,14 @@
 
     closeSettingsModalBtn.addEventListener('click', closeModal);
     closeTargetModalBtn.addEventListener('click', closeTargetModal);
+
+    document.getElementById('stats-random-notes-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        activeSectionFilter = "Random Notes";
+        generateRandomNotesIndices();
+        closeModal();
+        renderAll();
+    });
 
     window.addEventListener('click', (e) => {
         if (e.target === settingsModalOverlay) {
@@ -1109,11 +1126,27 @@ function renderDailyTargetLogs() {
 
     function renderSectionList() {
         const sectionList = document.getElementById('section-list');
+        const chaptersContainer = document.getElementById('chapters-container');
         sectionList.innerHTML = '';
         sectionSelect.innerHTML = '';
 
-        const activeTopics = getFilteredTopics();
+        if (activeSectionFilter === "Random Notes") {
+            chaptersContainer.classList.add('hidden-container');
+            
+            const link = document.createElement('a');
+            link.textContent = "Random Notes";
+            link.href = '#';
+            link.className = 'list-item active';
+            link.onclick = (e) => {
+                e.preventDefault();
+            };
+            sectionList.appendChild(link);
+            return;
+        } else {
+            chaptersContainer.classList.remove('hidden-container');
+        }
 
+        const activeTopics = getFilteredTopics();
         const visibleSections = sections.filter(sec => {
             const secChapters = chapters.filter(ch => ch.section === sec);
             return secChapters.some(ch => activeTopics.some(link => link.chapter === ch.name));
@@ -1127,7 +1160,6 @@ function renderDailyTargetLogs() {
             link.onclick = (e) => {
                 e.preventDefault();
                 selectedSection = sec;
-
                 const visibleChs = chapters.filter(ch => 
                     ch.section === selectedSection && activeTopics.some(link => link.chapter === ch.name)
                 );
@@ -1283,7 +1315,11 @@ function renderDailyTargetLogs() {
             unassignedElem.textContent = `Unassigned : ${unassigned} ( ${calcPct(unassigned)} % )`;
         }
 
-        document.getElementById('stats-visited').innerHTML = `Visited : ${visitedCount} ( ${calcPct(visitedCount)} % ) - <a href="#" id="how-to-use-link">how to use ?</a>`;
+        const history = getVisitedHistory();
+        const todayStr = getLocalDateString();
+        const visitedToday = (history[todayStr] || []).length;
+
+        document.getElementById('stats-visited').innerHTML = `Visited : ${visitedCount} ( ${calcPct(visitedCount)} % ) - <a href="#" id="how-to-use-link">today's done : ${visitedToday}</a>`;
         document.getElementById('stats-unvisited').textContent = `Unvisited : ${unvisitedCount} ( ${calcPct(unvisitedCount)} % )`;
         document.getElementById('stats-subs-only').textContent = `Subscribers-only posts : ${subsOnlyPosts} ( ${calcPct(subsOnlyPosts)} % )`;
         document.getElementById('stats-public').textContent = `Public posts : ${publicPosts} ( ${calcPct(publicPosts)} % )`;
@@ -1299,18 +1335,83 @@ function renderDailyTargetLogs() {
         }
     }
 
-    document.getElementById('reset-visited-btn').addEventListener('click', resetVisitedLinks);
+    document.getElementById('reset-visited-btn').addEventListener('click', () => {
+    if (confirm("Are you sure you want to reset all visited links?")) {
+        resetVisitedLinks();
+    }
+    });
+
+    function generateRandomNotesIndices() {
+        const total = links.length;
+        if (total === 0) {
+            randomNotesIndices = [];
+            return;
+        }
+        const count = Math.min(10, total);
+        const indices = Array.from({ length: total }, (_, i) => i);
+        for (let i = indices.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [indices[i], indices[j]] = [indices[j], indices[i]];
+        }
+        randomNotesIndices = indices.slice(0, count);
+    }
 
     function renderMainLinks() {
         linkList.innerHTML = '';
         
-        const headerText = selectedChapter ? `Topics : ${selectedChapter}` : "No Chapter Selected";
+        let headerText = selectedChapter ? `Topics : ${selectedChapter}` : "No Chapter Selected";
+        if (activeSectionFilter === "Random Notes") {
+            headerText = "Topics : Random Notes";
+        }
         document.getElementById('current-chapter-title').textContent = headerText;
+
+        if (activeSectionFilter === "Random Notes") {
+            if (!randomNotesIndices) {
+                generateRandomNotesIndices();
+            }
+            let filtered = randomNotesIndices.map(idx => links[idx]).filter(item => item !== undefined);
+            const visitedSet = new Set(getVisitedLinks());
+
+            filtered.forEach(item => {
+                const anchor = document.createElement('a');
+                anchor.href = item.url;
+                anchor.textContent = item.text;
+                anchor.target = "_blank";
+                anchor.rel = "noopener noreferrer";
+                
+                if (visitedSet.has(item.url)) {
+                    anchor.classList.add('visited');
+                } else if (item.color === 'red') {
+                    anchor.style.color = 'red';
+                }
+
+                anchor.addEventListener('click', () => {
+                    markAsVisited(item.url);
+                    anchor.classList.add('visited');
+                    anchor.style.color = '';
+                    renderStats();
+                });
+
+                linkList.appendChild(anchor);
+            });
+
+            const moreBtn = document.createElement('button');
+            moreBtn.textContent = "Give me 10 more random notes";
+            moreBtn.style.marginTop = "15px";
+            moreBtn.style.padding = "6px 12px";
+            moreBtn.style.fontSize = "13px";
+            moreBtn.style.cursor = "pointer";
+            moreBtn.addEventListener('click', () => {
+                generateRandomNotesIndices();
+                renderAll();
+            });
+            linkList.appendChild(moreBtn);
+            return;
+        }
 
         if (!selectedChapter) return;
 
         let filtered = getFilteredTopics().filter(item => item.chapter === selectedChapter);
-
         const visitedSet = new Set(getVisitedLinks());
 
         filtered.forEach(item => {
