@@ -339,6 +339,78 @@
         .suggestion-item:hover {
             background-color: #f2f2f2;
         }
+
+        body.modal-open {
+            overflow: hidden;
+        }
+        .settings-btn {
+            padding: 6px 12px;
+            font-size: 13px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .settings-btn:hover {
+            background-color: #e0e0e0;
+        }
+        .settings-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .topic-search-container {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .topic-search-row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .topic-search-input {
+            flex: 1;
+            padding: 6px 8px;
+            font-size: 13px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .clear-search-btn {
+            padding: 6px 10px;
+            font-size: 12px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .clear-search-btn:hover {
+            background-color: #e0e0e0;
+        }
+        .section-header-row {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .section-header-row h3 {
+            margin: 0;
+        }
+        .desktop-only {
+            display: inline-block;
+            margin-top: 60px;
+        }
+        .mobile-only {
+            display: none;
+        }
+        @media (max-width: 768px) {
+            .desktop-only { display: none !important; }
+            .mobile-only { display: inline-block !important; }
+        }
     </style>
 </head>
 <body>
@@ -368,8 +440,12 @@
         <!-- Sections Column -->
         <div class="content-container">
             <button id="edit-sections-btn">Manage Sections</button>
-            <h3>Sections</h3>
+            <div class="section-header-row">
+                <h3>Sections</h3>
+                <button id="settings-btn-mobile" class="settings-btn mobile-only">Settings</button>
+            </div>
             <div id="section-list"></div>
+            <button id="settings-btn-desktop" class="settings-btn desktop-only">Settings</button>
         </div>
 
         <!-- Classifications Column -->
@@ -480,6 +556,25 @@
     </div>
 </div>
 
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settings-modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Settings</h3>
+            <button class="close-btn" id="close-settings-modal-btn">&times;</button>
+        </div>
+        <div class="settings-options">
+            <div class="topic-search-container">
+                <label for="topic-search-input">search example :</label>
+                <div class="topic-search-row">
+                    <input type="text" id="topic-search-input" class="topic-search-input" placeholder="Type to filter..." autocomplete="off">
+                    <button id="clear-search-btn" class="clear-search-btn">clear</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Firebase SDK Imports & Main Logic -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
@@ -524,6 +619,8 @@
     let selectedSection = "Miscellaneous";
     let selectedClassification = "Miscellaneous";
 
+    let topicSearchQuery = "";
+
     const loginOverlay = document.getElementById('login-overlay');
     const adminApp = document.getElementById('admin-app');
     const loginEmailInput = document.getElementById('login-email');
@@ -531,6 +628,12 @@
     const loginBtn = document.getElementById('login-btn');
     const logoutBtn = document.getElementById('logout-btn');
     const authError = document.getElementById('auth-error');
+    const topicSearchInput = document.getElementById('topic-search-input');
+    const clearSearchBtn = document.getElementById('clear-search-btn');
+    const settingsModalOverlay = document.getElementById('settings-modal-overlay');
+    const closeSettingsModalBtn = document.getElementById('close-settings-modal-btn');
+    const settingsBtnDesktop = document.getElementById('settings-btn-desktop');
+    const settingsBtnMobile = document.getElementById('settings-btn-mobile');
 
     loginBtn.addEventListener('click', async () => {
         const email = loginEmailInput.value.trim();
@@ -573,6 +676,20 @@
         }
         return a.text.localeCompare(b.text); // Alphabetical if same year
     });
+    }
+
+    function getFilteredExamples() {
+        let result = examples;
+        if (topicSearchQuery.trim() !== '') {
+            const query = topicSearchQuery.toLowerCase().trim();
+            result = result.filter(item => {
+                const textMatches = item.text && item.text.toLowerCase().includes(query);
+                const classMatches = item.classification && item.classification.toLowerCase().includes(query);
+                const urlMatches = item.url && item.url.toLowerCase().includes(query);
+                return textMatches || classMatches || urlMatches;
+            });
+        }
+        return result;
     }
 
     async function saveData() {
@@ -692,7 +809,12 @@
         const sectionList = document.getElementById('section-list');
         sectionList.innerHTML = '';
 
-        sections.forEach(sec => {
+        const activeExamples = getFilteredExamples();
+        const visibleSections = sections.filter(sec => {
+            const secClassifications = classifications.filter(ch => ch.section === sec);
+            return secClassifications.some(ch => activeExamples.some(link => link.classification === ch.name));
+        });
+        visibleSections.forEach(sec => {
             const link = document.createElement('a');
             link.textContent = sec;
             link.href = '#';
@@ -712,11 +834,15 @@
         const classificationList = document.getElementById('classification-list');
         classificationList.innerHTML = '';
 
-        const filteredClassifications = classifications.filter(ch => ch.section === selectedSection);
-
+        const activeExamples = getFilteredExamples();
+        const filteredClassifications = classifications.filter(ch => 
+            ch.section === selectedSection && activeExamples.some(link => link.classification === ch.name)
+        );
         filteredClassifications.forEach(chObj => {
+            const count = examples.filter(item => item.classification === chObj.name).length;
+
             const link = document.createElement('a');
-            link.textContent = chObj.name;
+            link.textContent = `${chObj.name} (${count})`;
             link.href = '#';
             link.className = `list-item ${chObj.name === selectedClassification ? 'active' : ''}`;
             link.onclick = (e) => {
@@ -736,7 +862,7 @@
 
         if (!selectedClassification) return;
 
-        const filtered = examples.filter(item => item.classification === selectedClassification);
+        const filtered = getFilteredExamples().filter(item => item.classification === selectedClassification);
         filtered.forEach(item => {
             const hasUrl = item.url && item.url.trim() !== '';
 
@@ -1143,6 +1269,35 @@
 
     closeSectionModalBtn.addEventListener('click', () => {
         sectionModalOverlay.style.display = 'none';
+    });
+
+    topicSearchInput.addEventListener('input', (e) => {
+        topicSearchQuery = e.target.value;
+        renderAll();
+    });
+
+    clearSearchBtn.addEventListener('click', () => {
+        topicSearchQuery = "";
+        topicSearchInput.value = "";
+        renderAll();
+    });
+
+    function openSettingsModal() {
+        document.body.classList.add('modal-open');
+        settingsModalOverlay.style.display = 'flex';
+    }
+
+    function closeSettingsModal() {
+        document.body.classList.remove('modal-open');
+        settingsModalOverlay.style.display = 'none';
+    }
+
+    settingsBtnDesktop.addEventListener('click', openSettingsModal);
+    settingsBtnMobile.addEventListener('click', openSettingsModal);
+    closeSettingsModalBtn.addEventListener('click', closeSettingsModal);
+
+    window.addEventListener('click', (event) => {
+        if (event.target === settingsModalOverlay) closeSettingsModal();
     });
 </script>
 </body>
