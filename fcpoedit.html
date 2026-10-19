@@ -841,7 +841,7 @@
 
             <br>
 
-            <div id="stats-visited">Visited : 0 ( 0.0 % ) - <a href="#" id="how-to-use-link">how to use ?</a></div>
+            <div id="stats-visited">Visited : 0 ( 0.0 % ) - <a href="#" id="how-to-use-link">today's done : 0</a></div>
             <div id="stats-unvisited">Unvisited : 0 ( 0.0 % )</div>
             <br>
             <button id="reset-visited-btn" class="reset-visited-btn">Reset all visited links</button>
@@ -2059,7 +2059,11 @@ async function saveData(updateTimestamp = false) {
         const calcPct = (count) => total > 0 ? ((count / total) * 100).toFixed(1) : "0.0";
 
         document.getElementById('stats-total').textContent = `Total links : ${total}`;
-        document.getElementById('stats-visited').innerHTML = `Visited : ${visitedCount} ( ${calcPct(visitedCount)} % ) - <a href="#" id="how-to-use-link">how to use ?</a>`;
+        const history = JSON.parse(localStorage.getItem('fcpo_visited_links_history') || '{}');
+        const todayStr = getLocalDateString();
+        const visitedToday = (history[todayStr] || []).length;
+
+        document.getElementById('stats-visited').innerHTML = `Visited : ${visitedCount} ( ${calcPct(visitedCount)} % ) - <a href="#" id="how-to-use-link">today's done : ${visitedToday}</a>`;
 
             const dynamicHowToUseLink = document.getElementById('how-to-use-link');
             if (dynamicHowToUseLink) {
