@@ -45,7 +45,7 @@
         }
 
         .content-container.right-container {
-            min-width: 500px; /* Adjust this value to your preferred fixed width */
+            min-width: 500px;
         }
 
         button {
@@ -349,35 +349,19 @@
             background-color: #f2f2f2;
         }
 
-        body.modal-open {
-            overflow: hidden;
-        }
-        .settings-btn {
-            padding: 6px 12px;
-            font-size: 13px;
-            background-color: #f0f0f0;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .settings-btn:hover {
-            background-color: #e0e0e0;
-        }
-        .settings-options {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
         .topic-search-container {
             margin-top: 10px;
             display: flex;
             flex-direction: column;
             gap: 6px;
+            width: 100%;
+            box-sizing: border-box;
         }
         .topic-search-row {
             display: flex;
             gap: 6px;
             align-items: center;
+            width: 100%;
         }
         .topic-search-input {
             flex: 1;
@@ -410,7 +394,8 @@
             margin: 0;
         }
         .desktop-only {
-            display: inline-block;
+            display: flex;
+            flex-direction: column;
             margin-top: 60px;
         }
         .mobile-only {
@@ -418,7 +403,7 @@
         }
         @media (max-width: 768px) {
             .desktop-only { display: none !important; }
-            .mobile-only { display: inline-block !important; }
+            .mobile-only { display: flex !important; }
         }
     </style>
 </head>
@@ -446,16 +431,34 @@
     </div>
 
     <div class="main-layout">
-        <!-- Sections Column -->
-        <div class="content-container">
-            <button id="edit-sections-btn">Manage Sections</button>
-            <div class="section-header-row">
-                <h3>Sections</h3>
-                <button id="settings-btn-mobile" class="settings-btn mobile-only">Settings</button>
-            </div>
-            <div id="section-list"></div>
-            <button id="settings-btn-desktop" class="settings-btn desktop-only">Settings</button>
+    <!-- Sections Column -->
+    <div class="content-container">
+        <button id="edit-sections-btn">Manage Sections</button>
+        <div class="section-header-row">
+            <h3>Sections</h3>
         </div>
+        
+        <!-- Mobile Search Box Position -->
+        <div class="topic-search-container mobile-only" style="margin-top: 0; margin-bottom: 20px;">
+            <label for="topic-search-input-mobile">search example :</label>
+            <div class="topic-search-row">
+                <input type="text" id="topic-search-input-mobile" class="topic-search-input" placeholder="Type to filter..." autocomplete="off">
+                <button id="clear-search-btn-mobile" class="clear-search-btn">clear</button>
+            </div>
+        </div>
+
+        <!-- Section Links Container -->
+        <div id="section-list"></div>
+
+        <!-- Desktop Search Box Position (Right below section list) -->
+        <div class="topic-search-container desktop-only">
+            <label for="topic-search-input-desktop">search example :</label>
+            <div class="topic-search-row">
+                <input type="text" id="topic-search-input-desktop" class="topic-search-input" placeholder="Type to filter..." autocomplete="off">
+                <button id="clear-search-btn-desktop" class="clear-search-btn">clear</button>
+            </div>
+        </div>
+    </div>
 
         <!-- Classifications Column -->
         <div class="content-container" id="classifications-container">
@@ -566,25 +569,6 @@
     </div>
 </div>
 
-<!-- Settings Modal -->
-<div class="modal-overlay" id="settings-modal-overlay">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Settings</h3>
-            <button class="close-btn" id="close-settings-modal-btn">&times;</button>
-        </div>
-        <div class="settings-options">
-            <div class="topic-search-container">
-                <label for="topic-search-input">search example :</label>
-                <div class="topic-search-row">
-                    <input type="text" id="topic-search-input" class="topic-search-input" placeholder="Type to filter..." autocomplete="off">
-                    <button id="clear-search-btn" class="clear-search-btn">clear</button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Firebase SDK Imports & Main Logic -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
@@ -638,12 +622,11 @@
     const loginBtn = document.getElementById('login-btn');
     const logoutBtn = document.getElementById('logout-btn');
     const authError = document.getElementById('auth-error');
-    const topicSearchInput = document.getElementById('topic-search-input');
-    const clearSearchBtn = document.getElementById('clear-search-btn');
-    const settingsModalOverlay = document.getElementById('settings-modal-overlay');
-    const closeSettingsModalBtn = document.getElementById('close-settings-modal-btn');
-    const settingsBtnDesktop = document.getElementById('settings-btn-desktop');
-    const settingsBtnMobile = document.getElementById('settings-btn-mobile');
+    
+    const topicSearchInputMobile = document.getElementById('topic-search-input-mobile');
+    const clearSearchBtnMobile = document.getElementById('clear-search-btn-mobile');
+    const topicSearchInputDesktop = document.getElementById('topic-search-input-desktop');
+    const clearSearchBtnDesktop = document.getElementById('clear-search-btn-desktop');
 
     loginBtn.addEventListener('click', async () => {
         const email = loginEmailInput.value.trim();
@@ -674,18 +657,18 @@
     });
 
     function sortExamplesArray() {
-    examples.sort((a, b) => {
-        const getYear = (str) => {
-            const match = str.match(/(\d{4})\s*$/);
-            return match ? parseInt(match[1], 10) : 0;
-        };
-        const yearA = getYear(a.text);
-        const yearB = getYear(b.text);
-        if (yearB !== yearA) {
-            return yearB - yearA; // Most recent year on top
-        }
-        return a.text.localeCompare(b.text); // Alphabetical if same year
-    });
+        examples.sort((a, b) => {
+            const getYear = (str) => {
+                const match = str.match(/(\d{4})\s*$/);
+                return match ? parseInt(match[1], 10) : 0;
+            };
+            const yearA = getYear(a.text);
+            const yearB = getYear(b.text);
+            if (yearB !== yearA) {
+                return yearB - yearA;
+            }
+            return a.text.localeCompare(b.text);
+        });
     }
 
     function getFilteredExamples() {
@@ -749,7 +732,6 @@
     const newTextInput = document.getElementById('new-text');
     const newUrlInput = document.getElementById('new-url');
 
-    // Pressing Enter in new example fields triggers add button
     [newTextInput, newUrlInput].forEach(input => {
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
@@ -1337,34 +1319,26 @@
         sectionModalOverlay.style.display = 'none';
     });
 
-    topicSearchInput.addEventListener('input', (e) => {
+    // Synced search handlers for both desktop and mobile inputs
+    function handleSearchInput(e) {
         topicSearchQuery = e.target.value;
+        if (topicSearchInputMobile) topicSearchInputMobile.value = topicSearchQuery;
+        if (topicSearchInputDesktop) topicSearchInputDesktop.value = topicSearchQuery;
         renderAll();
-    });
+    }
 
-    clearSearchBtn.addEventListener('click', () => {
+    if (topicSearchInputMobile) topicSearchInputMobile.addEventListener('input', handleSearchInput);
+    if (topicSearchInputDesktop) topicSearchInputDesktop.addEventListener('input', handleSearchInput);
+
+    function handleClearSearch() {
         topicSearchQuery = "";
-        topicSearchInput.value = "";
+        if (topicSearchInputMobile) topicSearchInputMobile.value = "";
+        if (topicSearchInputDesktop) topicSearchInputDesktop.value = "";
         renderAll();
-    });
-
-    function openSettingsModal() {
-        document.body.classList.add('modal-open');
-        settingsModalOverlay.style.display = 'flex';
     }
 
-    function closeSettingsModal() {
-        document.body.classList.remove('modal-open');
-        settingsModalOverlay.style.display = 'none';
-    }
-
-    settingsBtnDesktop.addEventListener('click', openSettingsModal);
-    settingsBtnMobile.addEventListener('click', openSettingsModal);
-    closeSettingsModalBtn.addEventListener('click', closeSettingsModal);
-
-    window.addEventListener('click', (event) => {
-        if (event.target === settingsModalOverlay) closeSettingsModal();
-    });
+    if (clearSearchBtnMobile) clearSearchBtnMobile.addEventListener('click', handleClearSearch);
+    if (clearSearchBtnDesktop) clearSearchBtnDesktop.addEventListener('click', handleClearSearch);
 
     window.addEventListener('resize', () => {
         updateContainerWidth();
