@@ -736,6 +736,16 @@
     const newTextInput = document.getElementById('new-text');
     const newUrlInput = document.getElementById('new-url');
 
+    // Pressing Enter in new example fields triggers add button
+    [newTextInput, newUrlInput].forEach(input => {
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addExampleBtn.click();
+            }
+        });
+    });
+
     const suggestionsBox = document.getElementById('suggestions-box');
 
     newTextInput.addEventListener('input', () => {
