@@ -44,6 +44,10 @@
             min-height: 80vh;
         }
 
+        .content-container.right-container {
+            min-width: 500px; /* Adjust this value to your preferred fixed width */
+        }
+
         button {
             font-size: 14px;
             padding: 6px 16px;
@@ -104,6 +108,11 @@
             flex-direction: column;
             align-items: flex-start;
             gap: 20px;
+        }
+        .column-select {
+            width: 100%;
+            padding: 4px;
+            font-size: 14px;
         }
 
         a, span.example-text {
@@ -514,6 +523,7 @@
                     <tr>
                         <th>Classification Name</th>
                         <th>Section</th>
+                        <th>Column</th>
                         <th style="width: 120px;">Action</th>
                     </tr>
                 </thead>
@@ -707,7 +717,10 @@
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 sections = data.sections || ["Miscellaneous"];
-                classifications = data.classifications || [{ name: "Miscellaneous", section: "Miscellaneous" }];
+                classifications = (data.classifications || [{ name: "Miscellaneous", section: "Miscellaneous", columns: 1 }]).map(ch => ({
+                    ...ch,
+                    columns: ch.columns || 1
+                }));
                 examples = data.examples || [];
                 sortExamplesArray();
 
@@ -813,6 +826,7 @@
         renderMainExamples();
         populateClassificationDropdown();
         populateSectionDropdown();
+        updateContainerWidth();
     }
 
     function renderSectionList() {
@@ -872,6 +886,22 @@
 
         if (!selectedClassification) return;
 
+        const currentClassObj = classifications.find(ch => ch.name === selectedClassification);
+        const colCount = currentClassObj && currentClassObj.columns ? currentClassObj.columns : 1;
+
+        if (colCount > 1) {
+            exampleList.style.display = 'block';
+            exampleList.style.columnCount = colCount;
+            exampleList.style.columnGap = '40px';
+        } else {
+            exampleList.style.display = 'flex';
+            exampleList.style.flexDirection = 'column';
+            exampleList.style.alignItems = 'flex-start';
+            exampleList.style.gap = '20px';
+            exampleList.style.columnCount = '';
+            exampleList.style.columnGap = '';
+        }
+
         const filtered = getFilteredExamples().filter(item => item.classification === selectedClassification);
         filtered.forEach(item => {
             const hasUrl = item.url && item.url.trim() !== '';
@@ -883,12 +913,22 @@
                 anchor.target = "_blank";
                 anchor.rel = "noopener noreferrer";
                 anchor.style.color = '#0000ee';
+                if (colCount > 1) {
+                    anchor.style.display = 'block';
+                    anchor.style.marginBottom = '20px';
+                    anchor.style.breakInside = 'avoid';
+                }
                 exampleList.appendChild(anchor);
             } else {
                 const span = document.createElement('span');
                 span.className = 'example-text';
                 span.textContent = item.text;
                 span.style.color = '#000000';
+                if (colCount > 1) {
+                    span.style.display = 'block';
+                    span.style.marginBottom = '20px';
+                    span.style.breakInside = 'avoid';
+                }
                 exampleList.appendChild(span);
             }
         });
@@ -1024,11 +1064,20 @@
                 `<option value="${sec}" ${sec === ch.section ? 'selected' : ''}>${sec}</option>`
             ).join('');
 
+            const columnOptionsHTML = [1, 2, 3].map(num => 
+                `<option value="${num}" ${num === (ch.columns || 1) ? 'selected' : ''}>${num}</option>`
+            ).join('');
+
             row.innerHTML = `
                 <td>${ch.name}</td>
                 <td>
                     <select class="section-select" data-idx="${globalIndex}">
                         ${sectionOptionsHTML}
+                    </select>
+                </td>
+                <td>
+                    <select class="column-select" data-idx="${globalIndex}">
+                        ${columnOptionsHTML}
                     </select>
                 </td>
                 <td>
@@ -1039,6 +1088,13 @@
 
             row.querySelector('.section-select').addEventListener('change', (e) => {
                 classifications[globalIndex].section = e.target.value;
+                saveData();
+                renderAll();
+                renderClassificationModalTable();
+            });
+
+            row.querySelector('.column-select').addEventListener('change', (e) => {
+                classifications[globalIndex].columns = parseInt(e.target.value, 10);
                 saveData();
                 renderAll();
                 renderClassificationModalTable();
@@ -1149,7 +1205,7 @@
             return;
         }
 
-        classifications.push({ name, section });
+        classifications.push({ name, section, columns: 1 });
         nameInput.value = '';
         saveData();
         renderClassificationModalTable();
@@ -1309,6 +1365,42 @@
     window.addEventListener('click', (event) => {
         if (event.target === settingsModalOverlay) closeSettingsModal();
     });
+
+    window.addEventListener('resize', () => {
+        updateContainerWidth();
+    });
+
+    function updateContainerWidth() {
+        const classificationsContainer = document.getElementById('classifications-container');
+
+        if (window.innerWidth <= 768) {
+            if (classificationsContainer) classificationsContainer.style.minWidth = '';
+            return;
+        }
+
+        const measurer = document.createElement('span');
+        measurer.style.visibility = 'hidden';
+        measurer.style.position = 'absolute';
+        measurer.style.whiteSpace = 'nowrap';
+        measurer.style.font = window.getComputedStyle(document.body).font;
+        document.body.appendChild(measurer);
+
+        if (classificationsContainer) {
+            if (!classifications.length) {
+                classificationsContainer.style.minWidth = '';
+            } else {
+                let maxClassWidth = 0;
+                classifications.forEach(ch => {
+                    measurer.textContent = ch.name;
+                    const width = measurer.getBoundingClientRect().width;
+                    if (width > maxClassWidth) maxClassWidth = width;
+                });
+                classificationsContainer.style.minWidth = `${Math.ceil(maxClassWidth) + 60}px`;
+            }
+        }
+
+        document.body.removeChild(measurer);
+    }
 </script>
 </body>
 </html>

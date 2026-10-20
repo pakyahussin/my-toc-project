@@ -452,7 +452,10 @@
         if (docSnap.exists()) {
             const data = docSnap.data();
             sections = data.sections || ["Miscellaneous"];
-            classifications = data.classifications || [{ name: "Miscellaneous", section: "Miscellaneous" }];
+            classifications = (data.classifications || [{ name: "Miscellaneous", section: "Miscellaneous", columns: 1 }]).map(ch => ({
+                ...ch,
+                columns: ch.columns || 1
+            }));
             examples = data.examples || [];
 
             const hash = window.location.hash.replace('#', '');
@@ -640,8 +643,10 @@
         );
 
         visibleClassifications.forEach(chObj => {
+            const count = examples.filter(item => item.classification === chObj.name).length;
+
             const link = document.createElement('a');
-            link.textContent = chObj.name;
+            link.textContent = `${chObj.name} (${count})`;
             link.href = '#';
             link.className = `list-item ${chObj.name === selectedClassification ? 'active' : ''}`;
             link.onclick = (e) => {
@@ -655,7 +660,7 @@
 
             const option = document.createElement('option');
             option.value = chObj.name;
-            option.textContent = chObj.name;
+            option.textContent = `${chObj.name} (${count})`;
             if (chObj.name === selectedClassification) option.selected = true;
             classificationSelect.appendChild(option);
         });
@@ -669,6 +674,22 @@
 
         if (!selectedClassification) return;
 
+        const currentClassObj = classifications.find(ch => ch.name === selectedClassification);
+        const colCount = currentClassObj && currentClassObj.columns ? currentClassObj.columns : 1;
+
+        if (colCount > 1) {
+            exampleList.style.display = 'block';
+            exampleList.style.columnCount = colCount;
+            exampleList.style.columnGap = '40px';
+        } else {
+            exampleList.style.display = 'flex';
+            exampleList.style.flexDirection = 'column';
+            exampleList.style.alignItems = 'flex-start';
+            exampleList.style.gap = '20px';
+            exampleList.style.columnCount = '';
+            exampleList.style.columnGap = '';
+        }
+
         let filtered = getFilteredExamples().filter(item => item.classification === selectedClassification);
 
         filtered.forEach(item => {
@@ -681,12 +702,22 @@
                 anchor.target = "_blank";
                 anchor.rel = "noopener noreferrer";
                 anchor.style.color = '#0000ee';
+                if (colCount > 1) {
+                    anchor.style.display = 'block';
+                    anchor.style.marginBottom = '20px';
+                    anchor.style.breakInside = 'avoid';
+                }
                 exampleList.appendChild(anchor);
             } else {
                 const span = document.createElement('span');
                 span.className = 'example-text';
                 span.textContent = item.text;
                 span.style.color = '#000000';
+                if (colCount > 1) {
+                    span.style.display = 'block';
+                    span.style.marginBottom = '20px';
+                    span.style.breakInside = 'avoid';
+                }
                 exampleList.appendChild(span);
             }
         });
