@@ -91,6 +91,10 @@
             display: none !important;
         }
 
+        .content-container.right-container {
+        min-width: 500px; /* Change this number to whatever fixed width you prefer */
+        }
+
         #current-classification-title {
             margin-bottom: 20px;
             margin-top: 0;
@@ -346,7 +350,7 @@
     </div>
 
     <!-- Examples Container -->
-    <div class="content-container right-container">
+    <div class="content-container right-container" id="examples-container">
         <h3 id="current-classification-title">Examples</h3>
         <div id="example-list"></div>
     </div>
@@ -567,6 +571,7 @@
         renderSectionList();
         renderClassificationList();
         renderMainExamples();
+        updateContainerWidth();
     }
 
     function getFilteredExamples() {
@@ -685,6 +690,42 @@
                 exampleList.appendChild(span);
             }
         });
+    }
+
+    window.addEventListener('resize', () => {
+        updateContainerWidth();
+    });
+
+    function updateContainerWidth() {
+        const classificationsContainer = document.getElementById('classifications-container');
+
+        if (window.innerWidth <= 768) {
+            if (classificationsContainer) classificationsContainer.style.minWidth = '';
+            return;
+        }
+
+        const measurer = document.createElement('span');
+        measurer.style.visibility = 'hidden';
+        measurer.style.position = 'absolute';
+        measurer.style.whiteSpace = 'nowrap';
+        document.body.appendChild(measurer);
+
+        if (classificationsContainer) {
+            if (!classifications.length) {
+                classificationsContainer.style.minWidth = '';
+            } else {
+                let maxClassWidth = 0;
+                measurer.style.font = window.getComputedStyle(document.body).font;
+                classifications.forEach(ch => {
+                    measurer.textContent = ch.name;
+                    const width = measurer.getBoundingClientRect().width;
+                    if (width > maxClassWidth) maxClassWidth = width;
+                });
+                classificationsContainer.style.minWidth = `${Math.ceil(maxClassWidth) + 60}px`;
+            }
+        }
+
+        document.body.removeChild(measurer);
     }
 </script>
 </body>
