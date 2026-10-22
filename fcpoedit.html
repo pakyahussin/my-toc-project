@@ -732,7 +732,7 @@
         <div class="content-container right-container">
             <div class="button-row">
                 <button id="edit-btn">Manage Links</button>
-                <button id="check-duplicates-btn">Check Duplicate Links</button>
+                <button id="check-double-dates-btn">Check Double Dates</button>
             </div>
                 <h3 id="current-chapter-title">Topics</h3>
             <div id="link-list"></div>
@@ -826,13 +826,13 @@
     </div>
 </div>
 
-<!-- Check Duplicates Modal -->
-<div class="modal-overlay" id="duplicate-modal-overlay">
+<!-- Check Double Dates Modal -->
+<div class="modal-overlay" id="double-date-modal-overlay">
     <div class="modal-content">
         <div class="modal-header">
-            <h3 id="duplicate-modal-title">Duplicate Links</h3>
+            <h3 id="double-date-modal-title">Double Dates</h3>
         </div>
-        <p>Please delete links until only 1 link remains for this duplicate set.</p>
+        <p>Please delete topics until only 1 topic remains for this date set.</p>
         <table class="link-table">
             <thead>
                 <tr>
@@ -841,7 +841,7 @@
                     <th style="width: 80px;">Action</th>
                 </tr>
             </thead>
-            <tbody id="duplicate-table-body"></tbody>
+            <tbody id="double-date-table-body"></tbody>
         </table>
     </div>
 </div>
@@ -1905,7 +1905,8 @@
         if (event.target === chapterModalOverlay) chapterModalOverlay.style.display = 'none';
         if (event.target === sectionModalOverlay) sectionModalOverlay.style.display = 'none';
         if (event.target === statsModalOverlay) closeStatsModal();
-        if (event.target === duplicateModalOverlay) duplicateModalOverlay.style.display = 'none';
+        const doubleDateModalOverlay = document.getElementById('double-date-modal-overlay');
+        if (event.target === doubleDateModalOverlay) doubleDateModalOverlay.style.display = 'none';
     });
 
     function editLink(index) {
@@ -2266,87 +2267,90 @@
         chapterModalOverlay.style.display = 'none';
     });
 
-    const checkDuplicatesBtn = document.getElementById('check-duplicates-btn');
-    const duplicateModalOverlay = document.getElementById('duplicate-modal-overlay');
-    const duplicateModalTitle = document.getElementById('duplicate-modal-title');
-    const duplicateTableBody = document.getElementById('duplicate-table-body');
+const checkDoubleDatesBtn = document.getElementById('check-double-dates-btn');
+const doubleDateModalOverlay = document.getElementById('double-date-modal-overlay');
+const doubleDateModalTitle = document.getElementById('double-date-modal-title');
+const doubleDateTableBody = document.getElementById('double-date-table-body');
 
-    let duplicateGroups = [];
-    let currentGroupIndex = 0;
+let doubleDateGroups = [];
+let currentDoubleDateIndex = 0;
 
-    function findDuplicateGroups() {
-        const urlMap = {};
-        links.forEach((link, index) => {
-            const normalizedUrl = link.url.trim().toLowerCase();
-            if (!urlMap[normalizedUrl]) {
-                urlMap[normalizedUrl] = [];
+function findDoubleDateGroups() {
+    const dateMap = {};
+    links.forEach((link, index) => {
+        const dateInfo = parseTopicDateInfo(link.text);
+        if (dateInfo.hasDay && dateInfo.year > 0) {
+            const dateKey = `${dateInfo.day}-${dateInfo.month}-${dateInfo.year}`;
+            if (!dateMap[dateKey]) {
+                dateMap[dateKey] = [];
             }
-            urlMap[normalizedUrl].push({ ...link, globalIndex: index });
-        });
-        return Object.values(urlMap).filter(group => group.length > 1);
+            dateMap[dateKey].push({ ...link, globalIndex: index });
+        }
+    });
+    return Object.values(dateMap).filter(group => group.length > 1);
+}
+
+checkDoubleDatesBtn.addEventListener('click', () => {
+    doubleDateGroups = findDoubleDateGroups();
+    if (doubleDateGroups.length === 0) {
+        alert("No double dates found!");
+        return;
+    }
+    currentDoubleDateIndex = 0;
+    showDoubleDateGroupModal();
+});
+
+function showDoubleDateGroupModal() {
+    if (currentDoubleDateIndex >= doubleDateGroups.length) {
+        doubleDateModalOverlay.style.display = 'none';
+        alert("All double dates resolved!");
+        saveData(true);
+        return;
     }
 
-    checkDuplicatesBtn.addEventListener('click', () => {
-        duplicateGroups = findDuplicateGroups();
-        if (duplicateGroups.length === 0) {
-            alert("No duplicates found!");
-            return;
-        }
-        currentGroupIndex = 0;
-        showDuplicateGroupModal();
+    const currentGroup = doubleDateGroups[currentDoubleDateIndex];
+    if (currentGroup.length <= 1) {
+        currentDoubleDateIndex++;
+        showDoubleDateGroupModal();
+        return;
+    }
+
+    doubleDateModalOverlay.style.display = 'flex';
+    doubleDateModalTitle.textContent = `Double Date Set ${currentDoubleDateIndex + 1} of ${doubleDateGroups.length}`;
+    doubleDateTableBody.innerHTML = '';
+
+    currentGroup.forEach((item, localIndex) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><a href="${item.url}" target="_blank" rel="noopener noreferrer">${item.text}</a></td>
+            <td>${item.chapter}</td>
+            <td>
+                <button class="delete-btn" data-local-idx="${localIndex}">Delete</button>
+            </td>
+        `;
+        row.querySelector('.delete-btn').addEventListener('click', () => removeDoubleDateItem(localIndex));
+        doubleDateTableBody.appendChild(row);
+    });
+}
+
+function removeDoubleDateItem(localIndex) {
+    const currentGroup = doubleDateGroups[currentDoubleDateIndex];
+    const itemToRemove = currentGroup[localIndex];
+
+    links = links.filter((_, idx) => idx !== itemToRemove.globalIndex);
+
+    doubleDateGroups.forEach(group => {
+        group.forEach(item => {
+            if (item.globalIndex > itemToRemove.globalIndex) {
+                item.globalIndex--;
+            }
+        });
     });
 
-    function showDuplicateGroupModal() {
-        if (currentGroupIndex >= duplicateGroups.length) {
-            duplicateModalOverlay.style.display = 'none';
-            alert("All duplicates resolved!");
-            saveData(true);
-            return;
-        }
-
-        const currentGroup = duplicateGroups[currentGroupIndex];
-        if (currentGroup.length <= 1) {
-            currentGroupIndex++;
-            showDuplicateGroupModal();
-            return;
-        }
-
-        duplicateModalOverlay.style.display = 'flex';
-        duplicateModalTitle.textContent = `Duplicate Set ${currentGroupIndex + 1} of ${duplicateGroups.length} (${currentGroup[0].url})`;
-        duplicateTableBody.innerHTML = '';
-
-        currentGroup.forEach((item, localIndex) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${item.text}</td>
-                <td>${item.chapter}</td>
-                <td>
-                    <button class="delete-btn" data-local-idx="${localIndex}">Delete</button>
-                </td>
-            `;
-            row.querySelector('.delete-btn').addEventListener('click', () => removeDuplicateItem(localIndex));
-            duplicateTableBody.appendChild(row);
-        });
-    }
-
-    function removeDuplicateItem(localIndex) {
-        const currentGroup = duplicateGroups[currentGroupIndex];
-        const itemToRemove = currentGroup[localIndex];
-
-        links = links.filter((_, idx) => idx !== itemToRemove.globalIndex);
-
-        duplicateGroups.forEach(group => {
-            group.forEach(item => {
-                if (item.globalIndex > itemToRemove.globalIndex) {
-                    item.globalIndex--;
-                }
-            });
-        });
-
-        currentGroup.splice(localIndex, 1);
-        saveData(true);
-        showDuplicateGroupModal();
-    }
+    currentGroup.splice(localIndex, 1);
+    saveData(true);
+    showDoubleDateGroupModal();
+}
 </script>
 </body>
 </html>
