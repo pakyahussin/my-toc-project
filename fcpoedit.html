@@ -17,21 +17,19 @@
             align-items: center;
         }
 
-        /* Update .header-bar to center horizontally on desktop */
         .header-bar {
             width: 100%;
             max-width: 1100px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin: 0 auto 20px auto; /* Added horizontal auto margin */
+            margin: 0 auto 20px auto;
         }
 
-        /* Update .main-layout to center the columns */
         .main-layout {
             display: flex;
             gap: 20px;
-            justify-content: center; /* Added to keep containers centered */
+            justify-content: center;
         }
 
         .content-container {
@@ -45,6 +43,10 @@
             flex-direction: column;
             align-items: flex-start;
             min-height: 80vh;
+        }
+
+        .content-container.hidden-container {
+            display: none !important;
         }
 
         button {
@@ -79,19 +81,17 @@
             font-weight: normal;
         }
 
-        /* Visited chapter (all topics under it are visited) */
         .list-item.visited {
             color: purple !important;
             text-decoration: line-through !important;
         }
 
-        /* Active + Visited chapter */
         .list-item.active.visited {
             color: red !important;
             text-decoration: line-through !important;
         }
 
-        #chapter-list {
+        #section-list, #chapter-list {
             width: 100%;
             display: flex;
             flex-direction: column;
@@ -110,7 +110,7 @@
             color: #333;
         }
 
-        #edit-chapters-btn {
+        #edit-sections-btn, #edit-chapters-btn {
             margin-bottom: 20px;
         }
 
@@ -144,13 +144,11 @@
             text-decoration: underline;
         }
 
-        /* Visited link styling (Purple + Strikethrough) */
         #link-list a.visited {
             color: purple !important;
             text-decoration: line-through !important;
         }
 
-        /* Stats Button Styles */
         .stats-btn {
             margin-top: 60px;
             padding: 6px 12px;
@@ -174,7 +172,7 @@
             display: none;
         }
 
-        .chapter-header-row {
+        .section-header-row, .chapter-header-row, .topics-header-row {
             width: 100%;
             display: flex;
             justify-content: space-between;
@@ -182,11 +180,10 @@
             margin-bottom: 20px;
         }
 
-        .chapter-header-row h3 {
+        .section-header-row h3, .chapter-header-row h3, .topics-header-row h3 {
             margin: 0;
         }
 
-        /* Modal Styles */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -263,7 +260,6 @@
             background-color: #e0e0e0;
         }
 
-        /* Month Filter Buttons inside Stats Modal */
         .stats-month-filters {
             margin-top: 12px;
             display: flex;
@@ -336,7 +332,6 @@
             border: 1px solid #ddd;
             padding: 8px;
             text-align: left;
-            word-break: nowrap;
         }
 
         .link-table th {
@@ -406,7 +401,7 @@
             opacity: 0.5;
             background-color: #e0e0e0;
         }
-        .chapter-select {
+        .chapter-select, .section-select-modal {
             width: 100%;
             padding: 4px;
             font-size: 14px;
@@ -417,7 +412,6 @@
             margin-bottom: 20px;
         }
 
-        /* Stats Section inside Modal */
         .stats-container {
             font-size: 13px;
             line-height: 1.6;
@@ -444,7 +438,6 @@
             background-color: #e0e0e0;
         }
 
-        /* Auth Form Styles */
         .login-box {
             background: #ffffff;
             padding: 30px;
@@ -495,10 +488,9 @@
             display: none;
             width: 100%;
             max-width: 1100px;
-            margin: 0 auto; /* Added to center the page horizontally */
+            margin: 0 auto;
         }
 
-        /* Daily Target Modal Custom Styles */
         .target-btn-red {
             background-color: #ff4d4d;
             color: #ffffff;
@@ -579,7 +571,6 @@
             font-weight: bold;
         }
 
-        /* Mobile Styles */
         @media (max-width: 768px) {
             body {
                 padding: 12px;
@@ -587,7 +578,7 @@
             }
 
             h3 {
-            font-size: 16px;
+                font-size: 16px;
             }
 
             .header-bar {
@@ -610,12 +601,11 @@
                 min-width: unset !important;
             }
 
-            #edit-chapters-btn, .button-row {
+            #edit-sections-btn, #edit-chapters-btn, .button-row {
                 display: none !important;
             }
 
-        /* Keep list visible on mobile, displayed inline with natural line wrapping */
-            #chapter-list {
+            #section-list, #chapter-list {
                 display: flex !important;
                 flex-direction: row !important;
                 flex-wrap: wrap !important;
@@ -624,12 +614,11 @@
                 width: 100%;
             }
 
-        /* Hide dropdown select element on mobile */
             .dropdown-select {
                 display: none !important;
             }
 
-        /* Style horizontal links */
+            #section-list .list-item,
             #chapter-list .list-item {
                 display: inline-flex !important;
                 align-items: center !important;
@@ -637,46 +626,50 @@
                 line-height: 1.5;
             }
 
-    /* Insert black pipe separator between items */
-    #chapter-list .list-item:not(:last-child)::after {
-        content: "|";
-        color: #000000;
-        margin: 0 6px;
-        text-decoration: none !important;
-        font-weight: normal;
-        pointer-events: none;
-    }
+            #section-list .list-item:not(:last-child)::after,
+            #chapter-list .list-item:not(:last-child)::after {
+                content: "|";
+                color: #000000;
+                margin: 0 6px;
+                text-decoration: none !important;
+                font-weight: normal;
+                pointer-events: none;
+            }
 
             #link-list {
                 gap: 24px;
             }
 
-#link-list a {
-    font-size: 14px; /* Changed from 16px */
-    white-space: normal;
-    word-break: break-word;
-    padding: 0; /* Removed box padding */
-    background-color: transparent; /* Removed background color */
-    border: none; /* Removed border */
-    width: 100%;
-    box-sizing: border-box;
-    display: block;
-}
+            #link-list a {
+                font-size: 14px;
+                white-space: normal;
+                word-break: break-word;
+                padding: 0;
+                background-color: transparent;
+                border: none;
+                width: 100%;
+                box-sizing: border-box;
+                display: block;
+            }
 
             #link-list a:active {
                 background-color: #e2e8f0;
             }
 
-            .chapter-header-row {
-                display: flex !important;
-                flex-direction: row !important;
-                justify-content: space-between !important;
-                align-items: center !important;
-                width: 100% !important;
-                margin-bottom: 12px;
+            .section-header-row, .chapter-header-row {
+                width: 100%;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
             }
 
-            .chapter-header-row h3 {
+            #current-chapter-title {
+                margin-bottom: 20px;
+                margin-top: 0;
+            }
+
+            .section-header-row h3, .chapter-header-row h3, .topics-header-row h3 {
                 margin: 0 !important;
             }
 
@@ -713,16 +706,26 @@
     </div>
 
     <div class="main-layout">
+        <!-- Sections Column -->
+        <div class="content-container" id="sections-container">
+            <button id="edit-sections-btn">Manage Sections</button>
+            <div class="section-header-row">
+                <h3>Sections</h3>
+                <button id="stats-btn-mobile" class="stats-btn mobile-only">Stats</button>
+            </div>
+            <select id="section-select" class="dropdown-select" aria-label="Select Section"></select>
+            <div id="section-list"></div>
+            <button id="stats-btn-desktop" class="stats-btn desktop-only">Stats</button>
+        </div>
+
         <!-- Chapters Column -->
         <div class="content-container" id="chapters-container">
             <button id="edit-chapters-btn">Manage Chapters</button>
             <div class="chapter-header-row">
                 <h3>Chapters</h3>
-                <button id="stats-btn-mobile" class="stats-btn mobile-only">Stats</button>
             </div>
             <select id="chapter-select" class="dropdown-select" aria-label="Select Chapter"></select>
             <div id="chapter-list"></div>
-            <button id="stats-btn-desktop" class="stats-btn desktop-only">Stats</button>
         </div>
 
         <!-- Topics Column -->
@@ -731,7 +734,7 @@
                 <button id="edit-btn">Manage Links</button>
                 <button id="check-duplicates-btn">Check Duplicate Links</button>
             </div>
-            <h3 id="current-chapter-title">Topics</h3>
+                <h3 id="current-chapter-title">Topics</h3>
             <div id="link-list"></div>
         </div>
     </div>
@@ -780,6 +783,7 @@
                 <thead>
                     <tr>
                         <th>Chapter Name</th>
+                        <th>Section</th>
                         <th style="width: 120px;">Action</th>
                     </tr>
                 </thead>
@@ -789,7 +793,35 @@
 
         <div class="add-form">
             <input type="text" id="new-chapter-name" placeholder="New Chapter Name">
+            <select id="new-chapter-section"></select>
             <button id="add-chapter-btn">Add Chapter</button>
+        </div>
+    </div>
+</div>
+
+<!-- Manage Sections Modal -->
+<div class="modal-overlay" id="section-modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Manage Sections</h3>
+            <button class="close-btn" id="close-section-modal-btn">&times;</button>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="link-table">
+                <thead>
+                    <tr>
+                        <th>Section Name</th>
+                        <th style="width: 120px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="section-table-body"></tbody>
+            </table>
+        </div>
+
+        <div class="add-form">
+            <input type="text" id="new-section-name" placeholder="New Section Name">
+            <button id="add-section-btn">Add Section</button>
         </div>
     </div>
 </div>
@@ -825,7 +857,6 @@
             <div id="stats-total">Total links : 0</div>
             <div id="stats-last-update">Last update : -</div>
             
-            <!-- SEARCH BOX -->
             <div class="topic-search-container">
                 <label for="topic-search-input">filter topics :</label>
                 <div class="topic-search-row">
@@ -834,10 +865,7 @@
                 </div>
             </div>
 
-            <!-- MONTH FILTER BUTTONS -->
-            <div class="stats-month-filters" id="stats-month-filters">
-                <!-- Dynamically populated year/month buttons -->
-            </div>
+            <div class="stats-month-filters" id="stats-month-filters"></div>
 
             <br>
 
@@ -906,10 +934,12 @@
     
     const docRef = doc(db, "app_data", "fcpo_state");
 
-    let chapters = ["Miscellaneous"];
+    let sections = ["Miscellaneous"];
+    let chapters = [{ name: "Miscellaneous", section: "Miscellaneous" }];
     let links = [];
+    let selectedSection = "Miscellaneous";
     let selectedChapter = "Miscellaneous";
-    let activeMonthFilter = null; // Stores currently selected month filter (e.g., "Aug 2026") if active
+    let activeMonthFilter = null; 
     let randomNotesIndices = null;
     let lastUpdatedTimestamp = null;
 
@@ -937,7 +967,6 @@
     }
     initStartDate();
 
-    // --- Authentication Flow ---
     const loginOverlay = document.getElementById('login-overlay');
     const adminApp = document.getElementById('admin-app');
     const loginEmailInput = document.getElementById('login-email');
@@ -974,39 +1003,40 @@
         }
     });
 
-async function saveData(updateTimestamp = false) {
-    try {
-        const payload = { chapters, links };
-        if (updateTimestamp) {
-            payload.last_updated_timestamp = Date.now();
+    async function saveData(updateTimestamp = false) {
+        try {
+            const payload = { sections, chapters, links };
+            if (updateTimestamp) {
+                payload.last_updated_timestamp = Date.now();
+            }
+            await setDoc(docRef, payload, { merge: true });
+        } catch (e) {
+            console.error("Error writing document to Firebase: ", e);
+            alert("Error saving: You may not have write permission.");
         }
-        await setDoc(docRef, payload, { merge: true });
-    } catch (e) {
-        console.error("Error writing document to Firebase: ", e);
-        alert("Error saving: You may not have write permission.");
     }
-}
 
-    // --- Real-Time Sync Listener ---
     function initRealtimeSync() {
         onSnapshot(docRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 lastUpdatedTimestamp = data.last_updated_timestamp || null;
                 
+                sections = data.sections || ["Miscellaneous"];
+                
                 if (data.chapters && Array.isArray(data.chapters)) {
-                    chapters = data.chapters.map(ch => typeof ch === 'object' ? ch.name : ch);
+                    if (typeof data.chapters[0] === 'string') {
+                        chapters = data.chapters.map(ch => ({ name: ch, section: "Miscellaneous" }));
+                    } else {
+                        chapters = data.chapters.map(ch => ({ name: ch.name || ch, section: ch.section || "Miscellaneous" }));
+                    }
                 } else {
-                    chapters = ["Miscellaneous"];
+                    chapters = [{ name: "Miscellaneous", section: "Miscellaneous" }];
                 }
 
                 links = data.links || [];
 
-                if (!activeMonthFilter && !chapters.includes(selectedChapter)) {
-                    selectedChapter = chapters[0] || "Miscellaneous";
-                }
-
-                // Restore saved chapter from localStorage
+                const savedSection = localStorage.getItem('selected_fcpo_section');
                 const savedChapter = localStorage.getItem('selected_fcpo_chapter');
                 const savedMonthFilter = localStorage.getItem('fcpo_active_month_filter');
                 const savedRandomIndices = localStorage.getItem('fcpo_random_notes_indices');
@@ -1016,10 +1046,19 @@ async function saveData(updateTimestamp = false) {
                     randomNotesIndices = JSON.parse(savedRandomIndices);
                 } else if (savedMonthFilter) {
                     activeMonthFilter = savedMonthFilter;
-                } else if (savedChapter && chapters.includes(savedChapter)) {
-                    selectedChapter = savedChapter;
-                } else if (!chapters.includes(selectedChapter)) {
-                    selectedChapter = chapters[0] || "Miscellaneous";
+                } else {
+                    if (savedSection && sections.includes(savedSection)) {
+                        selectedSection = savedSection;
+                    } else if (!sections.includes(selectedSection)) {
+                        selectedSection = sections[0] || "Miscellaneous";
+                    }
+
+                    const availableChs = chapters.filter(ch => ch.section === selectedSection);
+                    if (savedChapter && availableChs.some(ch => ch.name === savedChapter)) {
+                        selectedChapter = savedChapter;
+                    } else {
+                        selectedChapter = availableChs[0] ? availableChs[0].name : "";
+                    }
                 }
 
                 renderAll();
@@ -1038,7 +1077,6 @@ async function saveData(updateTimestamp = false) {
         }
         const count = Math.min(10, total);
         const indices = Array.from({ length: total }, (_, i) => i);
-        // Shuffle array
         for (let i = indices.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [indices[i], indices[j]] = [indices[j], indices[i]];
@@ -1058,11 +1096,11 @@ async function saveData(updateTimestamp = false) {
         } else {
             localStorage.removeItem('fcpo_active_month_filter');
             localStorage.removeItem('fcpo_random_notes_indices');
+            localStorage.setItem('selected_fcpo_section', selectedSection);
             localStorage.setItem('selected_fcpo_chapter', selectedChapter);
         }
     }
 
-    // --- DOM Elements ---
     const editBtn = document.getElementById('edit-btn');
     const linkList = document.getElementById('link-list');
     const modalOverlay = document.getElementById('modal-overlay');
@@ -1072,13 +1110,28 @@ async function saveData(updateTimestamp = false) {
     const newTextInput = document.getElementById('new-text');
     const newUrlInput = document.getElementById('new-url');
 
+    const editSectionsBtn = document.getElementById('edit-sections-btn');
+    const sectionModalOverlay = document.getElementById('section-modal-overlay');
+    const closeSectionModalBtn = document.getElementById('close-section-modal-btn');
+    const sectionTableBody = document.getElementById('section-table-body');
+    const addSectionBtn = document.getElementById('add-section-btn');
+
     const editChaptersBtn = document.getElementById('edit-chapters-btn');
     const chapterModalOverlay = document.getElementById('chapter-modal-overlay');
     const closeChapterModalBtn = document.getElementById('close-chapter-modal-btn');
     const chapterTableBody = document.getElementById('chapter-table-body');
     const addChapterBtn = document.getElementById('add-chapter-btn');
 
+    const sectionSelect = document.getElementById('section-select');
     const chapterSelect = document.getElementById('chapter-select');
+
+    sectionSelect.addEventListener('change', (e) => {
+        selectedSection = e.target.value;
+        const availableChs = chapters.filter(ch => ch.section === selectedSection);
+        selectedChapter = availableChs[0] ? availableChs[0].name : "";
+        saveNavigationState();
+        renderAll();
+    });
 
     chapterSelect.addEventListener('change', (e) => {
         activeMonthFilter = null;
@@ -1092,6 +1145,7 @@ async function saveData(updateTimestamp = false) {
     });
 
     function renderAll() {
+        renderSectionList();
         renderChapterList();
         renderMainLinks();
         populateChapterDropdown();
@@ -1099,7 +1153,6 @@ async function saveData(updateTimestamp = false) {
         renderStats();
     }
 
-    // --- Date Parsing and Sorting Helpers ---
     const monthMap = {
         "jan": 0, "feb": 1, "mar": 2, "apr": 3, "may": 4, "jun": 5,
         "jul": 6, "aug": 7, "sep": 8, "oct": 9, "nov": 10, "dec": 11
@@ -1107,10 +1160,7 @@ async function saveData(updateTimestamp = false) {
 
     function parseTopicDateInfo(text) {
         if (!text) return { year: 0, month: 0, day: -1, hasDay: false };
-
         const lower = text.toLowerCase();
-
-        // Match patterns like "12 oct 2026" or "08 Oct 2026"
         const fullDateMatch = lower.match(/\b(\d{1,2})\s+([a-z]{3})\s+(\d{4})\b/);
         if (fullDateMatch) {
             const day = parseInt(fullDateMatch[1], 10);
@@ -1119,8 +1169,6 @@ async function saveData(updateTimestamp = false) {
             const month = monthMap[monthStr] !== undefined ? monthMap[monthStr] : 0;
             return { year, month, day, hasDay: true };
         }
-
-        // Match patterns with month and year only, e.g., "end Sep 2026", "Jan 2024 uptrend", "Sep 2026 : study"
         const monthYearMatch = lower.match(/\b([a-z]{3})\s+(\d{4})\b/);
         if (monthYearMatch) {
             const monthStr = monthYearMatch[1];
@@ -1128,76 +1176,101 @@ async function saveData(updateTimestamp = false) {
             const month = monthMap[monthStr] !== undefined ? monthMap[monthStr] : 0;
             return { year, month, day: -1, hasDay: false };
         }
-
         return { year: 0, month: 0, day: -1, hasDay: false };
     }
 
-    // --- Chapter List Rendering ---
+    function renderSectionList() {
+        const sectionList = document.getElementById('section-list');
+        const chaptersContainer = document.getElementById('chapters-container');
+        sectionList.innerHTML = '';
+        sectionSelect.innerHTML = '';
+
+        if (activeMonthFilter) {
+            chaptersContainer.classList.add('hidden-container');
+            const link = document.createElement('a');
+            link.textContent = activeMonthFilter;
+            link.href = '#';
+            link.className = 'list-item active';
+            link.onclick = (e) => { e.preventDefault(); };
+            sectionList.appendChild(link);
+            return;
+        } else {
+            chaptersContainer.classList.remove('hidden-container');
+        }
+
+        const activeTopics = getFilteredTopics();
+        const visibleSections = sections.filter(sec => {
+            const secChapters = chapters.filter(ch => ch.section === sec);
+            return secChapters.some(ch => activeTopics.some(link => link.chapter === ch.name));
+        });
+
+        visibleSections.forEach(sec => {
+            const link = document.createElement('a');
+            link.textContent = sec;
+            link.href = '#';
+            link.className = `list-item ${sec === selectedSection ? 'active' : ''}`;
+            link.onclick = (e) => {
+                e.preventDefault();
+                selectedSection = sec;
+                const visibleChs = chapters.filter(ch => 
+                    ch.section === selectedSection && activeTopics.some(link => link.chapter === ch.name)
+                );
+                selectedChapter = visibleChs[0] ? visibleChs[0].name : "";
+                saveNavigationState();
+                renderAll();
+            };
+            sectionList.appendChild(link);
+
+            const option = document.createElement('option');
+            option.value = sec;
+            option.textContent = sec;
+            if (sec === selectedSection) option.selected = true;
+            sectionSelect.appendChild(option);
+        });
+    }
+
     function renderChapterList() {
         const chapterList = document.getElementById('chapter-list');
         chapterList.innerHTML = '';
         chapterSelect.innerHTML = '';
 
-        if (activeMonthFilter) {
-            // When a month filter is active, hide chapters list and show only the month clicked
-            const link = document.createElement('a');
-            link.textContent = activeMonthFilter;
-            link.href = '#';
-            link.className = 'list-item active';
-            link.onclick = (e) => {
-                e.preventDefault();
-                // Clicking it again could clear or stay, let's keep it active
-            };
-            chapterList.appendChild(link);
-
-            const option = document.createElement('option');
-            option.value = activeMonthFilter;
-            option.textContent = activeMonthFilter;
-            option.selected = true;
-            chapterSelect.appendChild(option);
-            return;
-        }
-
         const activeTopics = getFilteredTopics();
         const visibleChapters = chapters.filter(ch => 
-            activeTopics.some(link => link.chapter === ch)
+            ch.section === selectedSection && activeTopics.some(link => link.chapter === ch.name)
         );
 
         const visitedSet = new Set(getVisitedLinks());
 
-        visibleChapters.forEach(ch => {
-            const chapterLinks = links.filter(item => item.chapter === ch);
+        visibleChapters.forEach(chObj => {
+            const chapterLinks = links.filter(item => item.chapter === chObj.name);
             const isChapterVisited = chapterLinks.length > 0 && chapterLinks.every(item => visitedSet.has(item.url));
 
-            // Desktop Links
             const link = document.createElement('a');
-            link.textContent = ch;
+            link.textContent = chObj.name;
             link.href = '#';
             
             let classNames = 'list-item';
-            if (ch === selectedChapter && !activeMonthFilter) classNames += ' active';
+            if (chObj.name === selectedChapter) classNames += ' active';
             if (isChapterVisited) classNames += ' visited';
 
             link.className = classNames;
             link.onclick = (e) => {
                 e.preventDefault();
                 activeMonthFilter = null;
-                selectedChapter = ch;
+                selectedChapter = chObj.name;
                 saveNavigationState();
                 renderAll();
             };
             chapterList.appendChild(link);
 
-            // Mobile Dropdown Option
             const option = document.createElement('option');
-            option.value = ch;
-            option.textContent = ch;
-            if (ch === selectedChapter && !activeMonthFilter) option.selected = true;
+            option.value = chObj.name;
+            option.textContent = chObj.name;
+            if (chObj.name === selectedChapter) option.selected = true;
             chapterSelect.appendChild(option);
         });
     }
 
-    // --- LocalStorage helpers for visited links ---
     function getVisitedLinks() {
         return JSON.parse(localStorage.getItem('fcpo_visited_links') || '[]');
     }
@@ -1225,7 +1298,6 @@ async function saveData(updateTimestamp = false) {
         localStorage.removeItem('fcpo_visited_links_history');
         localStorage.setItem('fcpo_daily_target_start_date', getLocalDateString());
         renderAll();
-        const targetModalOverlay = document.getElementById('target-modal-overlay');
         if (targetModalOverlay.style.display === 'flex') {
             renderDailyTargetLogs();
         }
@@ -1404,8 +1476,6 @@ async function saveData(updateTimestamp = false) {
         return result;
     }
 
-
-    // --- Links/Topics Rendering ---
     function renderMainLinks() {
         linkList.innerHTML = '';
         
@@ -1430,7 +1500,6 @@ async function saveData(updateTimestamp = false) {
             }
             filtered = randomNotesIndices.map(idx => links[idx]).filter(item => item !== undefined);
         } else if (activeMonthFilter) {
-            // Filter topics belonging to the selected month
             filtered = baseFilteredTopics.filter(item => {
                 const dateInfo = parseTopicDateInfo(item.text);
                 if (dateInfo.year === 0) return false;
@@ -1440,24 +1509,17 @@ async function saveData(updateTimestamp = false) {
                 return formattedMonthYear.toLowerCase() === activeMonthFilter.toLowerCase();
             });
 
-            // Sort chronologically: most recent date on top, month-only entries always at the top
             filtered.sort((a, b) => {
                 const infoA = parseTopicDateInfo(a.text);
                 const infoB = parseTopicDateInfo(b.text);
-
-                // If one has day and the other doesn't, month-only goes to the top
                 if (infoA.hasDay !== infoB.hasDay) {
-                    return infoA.hasDay ? 1 : -1; // month-only (hasDay: false) comes first
+                    return infoA.hasDay ? 1 : -1;
                 }
-
-                // If both have days, sort descending (most recent first)
                 if (infoA.hasDay && infoB.hasDay) {
                     if (infoA.day !== infoB.day) {
                         return infoB.day - infoA.day;
                     }
                 }
-
-                // Fallback secondary sort alphabetically or by text length if needed
                 return 0;
             });
         } else {
@@ -1486,7 +1548,6 @@ async function saveData(updateTimestamp = false) {
             linkList.appendChild(anchor);
         });
 
-        // Add "Give me 10 more random notes" button if Random Notes is active
         if (activeMonthFilter === "Random Notes") {
             const moreBtn = document.createElement('button');
             moreBtn.textContent = "Give me 10 more random notes";
@@ -1505,11 +1566,11 @@ async function saveData(updateTimestamp = false) {
     function populateChapterDropdown() {
         const dropdown = document.getElementById('new-chapter');
         dropdown.innerHTML = '';
-        chapters.forEach(ch => {
+        chapters.forEach(chObj => {
             const option = document.createElement('option');
-            option.value = ch;
-            option.textContent = ch;
-            if (!activeMonthFilter && ch === selectedChapter) option.selected = true;
+            option.value = chObj.name;
+            option.textContent = chObj.name;
+            if (!activeMonthFilter && chObj.name === selectedChapter) option.selected = true;
             dropdown.appendChild(option);
         });
     }
@@ -1517,12 +1578,13 @@ async function saveData(updateTimestamp = false) {
     document.getElementById('new-chapter').addEventListener('change', (e) => {
         activeMonthFilter = null;
         selectedChapter = e.target.value;
+        const found = chapters.find(ch => ch.name === selectedChapter);
+        if (found) selectedSection = found.section;
         saveNavigationState();
         renderAll();
         renderModalTable();
     });
 
-    // --- Drag and Drop Helper ---
     function setupDragEvents(row, container, dataArray, onReorder) {
         row.addEventListener('dragstart', (e) => {
             e.dataTransfer.setData('text/plain', row.dataset.index);
@@ -1552,7 +1614,6 @@ async function saveData(updateTimestamp = false) {
         });
     }
 
-    // --- Manage Links Modal Table ---
     function renderModalTable() {
         document.querySelector('#modal-overlay .modal-header h3').textContent = `Manage Links : ${activeMonthFilter || selectedChapter}`;
         modalTableBody.innerHTML = '';
@@ -1562,7 +1623,6 @@ async function saveData(updateTimestamp = false) {
             if (!randomNotesIndices) generateRandomNotesIndices();
             filtered = randomNotesIndices.map(origIdx => ({ ...links[origIdx], originalIndex: origIdx }));
         } else if (activeMonthFilter) {
-            // Filter topics belonging to the selected month using the active search/month criteria
             const baseFilteredTopics = getFilteredTopics();
             filtered = baseFilteredTopics
                 .map((item) => ({ ...item, originalIndex: links.indexOf(item) }))
@@ -1575,11 +1635,9 @@ async function saveData(updateTimestamp = false) {
                     return formattedMonthYear.toLowerCase() === activeMonthFilter.toLowerCase();
                 });
 
-            // Sort chronologically using the exact same sort logic as the main view
             filtered.sort((a, b) => {
                 const infoA = parseTopicDateInfo(a.text);
                 const infoB = parseTopicDateInfo(b.text);
-
                 if (infoA.hasDay !== infoB.hasDay) {
                     return infoA.hasDay ? 1 : -1;
                 }
@@ -1602,8 +1660,8 @@ async function saveData(updateTimestamp = false) {
             row.draggable = true;
             row.dataset.index = displayIndex;
 
-            const optionsHTML = chapters.map(ch => 
-                `<option value="${ch}" ${ch === item.chapter ? 'selected' : ''}>${ch}</option>`
+            const optionsHTML = chapters.map(chObj => 
+                `<option value="${chObj.name}" ${chObj.name === item.chapter ? 'selected' : ''}>${chObj.name}</option>`
             ).join('');
 
             row.innerHTML = `
@@ -1670,11 +1728,11 @@ async function saveData(updateTimestamp = false) {
         
         const activeTopics = getFilteredTopics();
         const availableChapters = chapters.filter(ch => 
-            activeTopics.some(link => link.chapter === ch)
+            activeTopics.some(link => link.chapter === ch.name)
         );
         
-        if (!activeMonthFilter && !availableChapters.includes(selectedChapter)) {
-            selectedChapter = availableChapters[0] || "";
+        if (!activeMonthFilter && !availableChapters.some(ch => ch.name === selectedChapter)) {
+            selectedChapter = availableChapters[0] ? availableChapters[0].name : "";
         }
 
         saveNavigationState();
@@ -1692,37 +1750,80 @@ async function saveData(updateTimestamp = false) {
 
         const activeTopics = getFilteredTopics();
         const availableChapters = chapters.filter(ch => 
-            activeTopics.some(link => link.chapter === ch)
+            activeTopics.some(link => link.chapter === ch.name)
         );
         
-        if (!activeMonthFilter && !availableChapters.includes(selectedChapter)) {
-            selectedChapter = availableChapters[0] || "";
+        if (!activeMonthFilter && !availableChapters.some(ch => ch.name === selectedChapter)) {
+            selectedChapter = availableChapters[0] ? availableChapters[0].name : "";
         }
 
         saveNavigationState();
         renderAll();
     });
 
-    // --- Manage Chapters Modal Table ---
-    function renderChapterModalTable() {
-        chapterTableBody.innerHTML = '';
-
-        chapters.forEach((ch, index) => {
+    function renderSectionModalTable() {
+        sectionTableBody.innerHTML = '';
+        sections.forEach((sec, index) => {
             const row = document.createElement('tr');
             row.className = 'draggable';
             row.draggable = true;
             row.dataset.index = index;
 
             row.innerHTML = `
-                <td>${ch}</td>
+                <td>${sec}</td>
                 <td>
                     <button class="edit-btn" data-idx="${index}">Edit</button>
-                    <button class="delete-btn" data-ch="${ch}">Delete</button>
+                    <button class="delete-btn" data-sec="${sec}">Delete</button>
                 </td>
             `;
 
+            row.querySelector('.edit-btn').addEventListener('click', () => editSection(index));
+            row.querySelector('.delete-btn').addEventListener('click', () => deleteSection(sec));
+
+            setupDragEvents(row, sectionTableBody, sections, () => {
+                saveData(true);
+                renderSectionModalTable();
+            });
+            sectionTableBody.appendChild(row);
+        });
+    }
+
+    function renderChapterModalTable() {
+        chapterTableBody.innerHTML = '';
+        const sectionDropdownOpts = sections.map(sec => `<option value="${sec}">${sec}</option>`).join('');
+        document.getElementById('new-chapter-section').innerHTML = sectionDropdownOpts;
+
+        chapters.forEach((chObj, index) => {
+            const row = document.createElement('tr');
+            row.className = 'draggable';
+            row.draggable = true;
+            row.dataset.index = index;
+
+            const secOptionsHTML = sections.map(sec => 
+                `<option value="${sec}" ${sec === chObj.section ? 'selected' : ''}>${sec}</option>`
+            ).join('');
+
+            row.innerHTML = `
+                <td>${chObj.name}</td>
+                <td>
+                    <select class="section-select-modal" data-ch-index="${index}">
+                        ${secOptionsHTML}
+                    </select>
+                </td>
+                <td>
+                    <button class="edit-btn" data-idx="${index}">Edit</button>
+                    <button class="delete-btn" data-ch="${chObj.name}">Delete</button>
+                </td>
+            `;
+
+            row.querySelector('.section-select-modal').addEventListener('change', (e) => {
+                chapters[index].section = e.target.value;
+                saveData(true);
+                renderAll();
+            });
+
             row.querySelector('.edit-btn').addEventListener('click', () => editChapter(index));
-            row.querySelector('.delete-btn').addEventListener('click', () => deleteChapter(ch));
+            row.querySelector('.delete-btn').addEventListener('click', () => deleteChapter(chObj.name));
 
             setupDragEvents(row, chapterTableBody, chapters, () => {
                 saveData(true);
@@ -1749,7 +1850,6 @@ async function saveData(updateTimestamp = false) {
         measurer.style.font = window.getComputedStyle(document.body).font;
         document.body.appendChild(measurer);
 
-        // Calculate Topics width
         if (rightContainer) {
             if (!links.length) {
                 rightContainer.style.minWidth = '';
@@ -1764,14 +1864,13 @@ async function saveData(updateTimestamp = false) {
             }
         }
 
-        // Calculate Chapters width
         if (chaptersContainer) {
             if (!chapters.length) {
                 chaptersContainer.style.minWidth = '';
             } else {
                 let maxChapterWidth = 0;
-                chapters.forEach(ch => {
-                    measurer.textContent = ch;
+                chapters.forEach(chObj => {
+                    measurer.textContent = chObj.name;
                     const width = measurer.getBoundingClientRect().width;
                     if (width > maxChapterWidth) maxChapterWidth = width;
                 });
@@ -1782,7 +1881,6 @@ async function saveData(updateTimestamp = false) {
         document.body.removeChild(measurer);
     }
 
-    // --- Action Handlers ---
     addLinkBtn.addEventListener('click', () => {
         const text = newTextInput.value.trim();
         let url = newUrlInput.value.trim();
@@ -1805,6 +1903,7 @@ async function saveData(updateTimestamp = false) {
     window.addEventListener('click', (event) => {
         if (event.target === modalOverlay) modalOverlay.style.display = 'none';
         if (event.target === chapterModalOverlay) chapterModalOverlay.style.display = 'none';
+        if (event.target === sectionModalOverlay) sectionModalOverlay.style.display = 'none';
         if (event.target === statsModalOverlay) closeStatsModal();
         if (event.target === duplicateModalOverlay) duplicateModalOverlay.style.display = 'none';
     });
@@ -1838,43 +1937,107 @@ async function saveData(updateTimestamp = false) {
         renderModalTable();
     }
 
-    addChapterBtn.addEventListener('click', () => {
-        const nameInput = document.getElementById('new-chapter-name');
+    addSectionBtn.addEventListener('click', () => {
+        const nameInput = document.getElementById('new-section-name');
         const name = nameInput.value.trim();
 
         if (!name) return;
-        if (chapters.includes(name)) {
+        if (sections.includes(name)) {
+            alert("Section already exists!");
+            return;
+        }
+
+        sections.push(name);
+        nameInput.value = '';
+        saveData(true);
+        renderSectionModalTable();
+        renderAll();
+    });
+
+    function editSection(index) {
+        const oldName = sections[index];
+        const newName = prompt("Edit section name:", oldName);
+        if (!newName || !newName.trim() || newName === oldName) return;
+
+        const cleanName = newName.trim();
+        if (sections.includes(cleanName)) {
+            alert("Section name already exists.");
+            return;
+        }
+
+        sections[index] = cleanName;
+        chapters.forEach(ch => {
+            if (ch.section === oldName) ch.section = cleanName;
+        });
+
+        if (selectedSection === oldName) selectedSection = cleanName;
+
+        saveData(true);
+        renderSectionModalTable();
+        renderAll();
+    }
+
+    function deleteSection(sectionName) {
+        if (sectionName === "Miscellaneous") {
+            alert("The 'Miscellaneous' section cannot be deleted.");
+            return;
+        }
+
+        if (!sections.includes("Miscellaneous")) {
+            sections.push("Miscellaneous");
+        }
+
+        chapters.forEach(ch => {
+            if (ch.section === sectionName) ch.section = "Miscellaneous";
+        });
+
+        sections = sections.filter(sec => sec !== sectionName);
+        if (selectedSection === sectionName) selectedSection = "Miscellaneous";
+
+        saveData(true);
+        renderSectionModalTable();
+        renderAll();
+    }
+
+    addChapterBtn.addEventListener('click', () => {
+        const nameInput = document.getElementById('new-chapter-name');
+        const name = nameInput.value.trim();
+        const section = document.getElementById('new-chapter-section').value;
+
+        if (!name) return;
+        if (chapters.some(ch => ch.name === name)) {
             alert("Chapter already exists!");
             return;
         }
 
-        chapters.push(name);
+        chapters.push({ name, section });
         nameInput.value = '';
         saveData(true);
         renderChapterModalTable();
+        renderAll();
     });
 
     function editChapter(index) {
-        const oldName = chapters[index];
-        const newName = prompt("Edit chapter name:", oldName);
-        if (!newName || !newName.trim() || newName === oldName) return;
+        const oldObj = chapters[index];
+        const newName = prompt("Edit chapter name:", oldObj.name);
+        if (!newName || !newName.trim() || newName === oldObj.name) return;
 
         const cleanName = newName.trim();
-        if (chapters.includes(cleanName)) {
+        if (chapters.some(ch => ch.name === cleanName)) {
             alert("Chapter name already exists.");
             return;
         }
 
-        chapters[index] = cleanName;
-
+        chapters[index].name = cleanName;
         links.forEach(item => {
-            if (item.chapter === oldName) item.chapter = cleanName;
+            if (item.chapter === oldObj.name) item.chapter = cleanName;
         });
 
-        if (selectedChapter === oldName) selectedChapter = cleanName;
+        if (selectedChapter === oldObj.name) selectedChapter = cleanName;
 
         saveData(true);
         renderChapterModalTable();
+        renderAll();
     }
 
     function deleteChapter(chapterName) {
@@ -1883,23 +2046,22 @@ async function saveData(updateTimestamp = false) {
             return;
         }
 
-        if (!chapters.includes("Miscellaneous")) {
-            chapters.push("Miscellaneous");
+        if (!chapters.some(ch => ch.name === "Miscellaneous")) {
+            chapters.push({ name: "Miscellaneous", section: "Miscellaneous" });
         }
 
         links.forEach(item => {
             if (item.chapter === chapterName) item.chapter = "Miscellaneous";
         });
 
-        chapters = chapters.filter(ch => ch !== chapterName);
-
+        chapters = chapters.filter(ch => ch.name !== chapterName);
         if (selectedChapter === chapterName) selectedChapter = "Miscellaneous";
 
         saveData(true);
         renderChapterModalTable();
+        renderAll();
     }
 
-    // --- Stats Modal Logic ---
     const statsModalOverlay = document.getElementById('stats-modal-overlay');
     const closeStatsModalBtn = document.getElementById('close-stats-modal-btn');
     const statsBtnDesktop = document.getElementById('stats-btn-desktop');
@@ -1933,9 +2095,6 @@ async function saveData(updateTimestamp = false) {
 
     function renderStatsMonthFilters() {
         statsMonthFiltersContainer.innerHTML = '';
-
-        // Extract all unique months and years from links
-        // Group by year (descending), months (chronological or custom order)
         const yearMap = {};
         const monthsArr = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -1953,44 +2112,42 @@ async function saveData(updateTimestamp = false) {
 
         if (sortedYears.length === 0) {
             statsMonthFiltersContainer.innerHTML = '<span style="color: #666; font-size: 12px;">No dated topics found.</span>';
-            return;
-        }
+        } else {
+            sortedYears.forEach(year => {
+                const yearGroupDiv = document.createElement('div');
+                yearGroupDiv.className = 'stats-year-group';
 
-    sortedYears.forEach(year => {
-            const yearGroupDiv = document.createElement('div');
-            yearGroupDiv.className = 'stats-year-group';
+                const yearStrong = document.createElement('strong');
+                yearStrong.textContent = `${year} : `;
+                yearGroupDiv.appendChild(yearStrong);
 
-            const yearStrong = document.createElement('strong');
-            yearStrong.textContent = `${year} : `;
-            yearGroupDiv.appendChild(yearStrong);
+                const monthBtnGroup = document.createElement('div');
+                monthBtnGroup.className = 'stats-month-btn-group';
 
-            const monthBtnGroup = document.createElement('div');
-            monthBtnGroup.className = 'stats-month-btn-group';
+                const sortedMonths = Array.from(yearMap[year]).sort((a, b) => a - b);
 
-            const sortedMonths = Array.from(yearMap[year]).sort((a, b) => a - b);
+                sortedMonths.forEach(monthIdx => {
+                    const monthName = monthsArr[monthIdx];
+                    const monthBtn = document.createElement('button');
+                    monthBtn.className = 'month-filter-btn';
+                    monthBtn.textContent = `(${monthName})`;
 
-            sortedMonths.forEach(monthIdx => {
-                const monthName = monthsArr[monthIdx];
-                const monthBtn = document.createElement('button');
-                monthBtn.className = 'month-filter-btn';
-                monthBtn.textContent = `(${monthName})`;
+                    monthBtn.addEventListener('click', () => {
+                        activeMonthFilter = `${monthName} ${year}`;
+                        updateClearButtonState();
+                        saveNavigationState();
+                        closeStatsModal();
+                        renderAll();
+                    });
 
-                monthBtn.addEventListener('click', () => {
-                    activeMonthFilter = `${monthName} ${year}`;
-                    updateClearButtonState();
-                    saveNavigationState();
-                    closeStatsModal();
-                    renderAll();
+                    monthBtnGroup.appendChild(monthBtn);
                 });
 
-                monthBtnGroup.appendChild(monthBtn);
+                yearGroupDiv.appendChild(monthBtnGroup);
+                statsMonthFiltersContainer.appendChild(yearGroupDiv);
             });
+        }
 
-            yearGroupDiv.appendChild(monthBtnGroup);
-            statsMonthFiltersContainer.appendChild(yearGroupDiv);
-        }); // <-- sortedYears.forEach properly closed here
-
-        // --- ADDED ONCE AT THE VERY BOTTOM OF THE CONTAINER ---
         const randomNotesDiv = document.createElement('div');
         randomNotesDiv.style.marginTop = '8px';
         randomNotesDiv.innerHTML = `<a href="#" id="stats-random-notes-link" style="color: #0000ee; text-decoration: underline; font-size: 13px;">Random Notes</a>`;
@@ -2065,13 +2222,13 @@ async function saveData(updateTimestamp = false) {
 
         document.getElementById('stats-visited').innerHTML = `Visited : ${visitedCount} ( ${calcPct(visitedCount)} % ) - <a href="#" id="how-to-use-link">today's done : ${visitedToday}</a>`;
 
-            const dynamicHowToUseLink = document.getElementById('how-to-use-link');
-            if (dynamicHowToUseLink) {
-                dynamicHowToUseLink.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    openTargetModal();
-                });
-            }
+        const dynamicHowToUseLink = document.getElementById('how-to-use-link');
+        if (dynamicHowToUseLink) {
+            dynamicHowToUseLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                openTargetModal();
+            });
+        }
         document.getElementById('stats-unvisited').textContent = `Unvisited : ${unvisitedCount} ( ${calcPct(unvisitedCount)} % )`;
         document.getElementById('stats-last-update').innerHTML = formatLastUpdate(lastUpdatedTimestamp);
     }
@@ -2082,7 +2239,6 @@ async function saveData(updateTimestamp = false) {
         }
     });
 
-    // --- Button Event Listeners ---
     editBtn.addEventListener('click', () => {
         renderModalTable();
         modalOverlay.style.display = 'flex';
@@ -2092,8 +2248,16 @@ async function saveData(updateTimestamp = false) {
         modalOverlay.style.display = 'none';
     });
 
+    editSectionsBtn.addEventListener('click', () => {
+        renderSectionModalTable();
+        sectionModalOverlay.style.display = 'flex';
+    });
+
+    closeSectionModalBtn.addEventListener('click', () => {
+        sectionModalOverlay.style.display = 'none';
+    });
+
     editChaptersBtn.addEventListener('click', () => {
-        document.querySelector('#chapter-modal-overlay .modal-header h3').textContent = `Manage Chapters`;
         renderChapterModalTable();
         chapterModalOverlay.style.display = 'flex';
     });
@@ -2102,7 +2266,6 @@ async function saveData(updateTimestamp = false) {
         chapterModalOverlay.style.display = 'none';
     });
 
-    // --- Duplicate Check Logic ---
     const checkDuplicatesBtn = document.getElementById('check-duplicates-btn');
     const duplicateModalOverlay = document.getElementById('duplicate-modal-overlay');
     const duplicateModalTitle = document.getElementById('duplicate-modal-title');
@@ -2120,18 +2283,15 @@ async function saveData(updateTimestamp = false) {
             }
             urlMap[normalizedUrl].push({ ...link, globalIndex: index });
         });
-
         return Object.values(urlMap).filter(group => group.length > 1);
     }
 
     checkDuplicatesBtn.addEventListener('click', () => {
         duplicateGroups = findDuplicateGroups();
-
         if (duplicateGroups.length === 0) {
             alert("No duplicates found!");
             return;
         }
-
         currentGroupIndex = 0;
         showDuplicateGroupModal();
     });
@@ -2145,7 +2305,6 @@ async function saveData(updateTimestamp = false) {
         }
 
         const currentGroup = duplicateGroups[currentGroupIndex];
-
         if (currentGroup.length <= 1) {
             currentGroupIndex++;
             showDuplicateGroupModal();
@@ -2154,7 +2313,6 @@ async function saveData(updateTimestamp = false) {
 
         duplicateModalOverlay.style.display = 'flex';
         duplicateModalTitle.textContent = `Duplicate Set ${currentGroupIndex + 1} of ${duplicateGroups.length} (${currentGroup[0].url})`;
-
         duplicateTableBody.innerHTML = '';
 
         currentGroup.forEach((item, localIndex) => {
@@ -2186,7 +2344,6 @@ async function saveData(updateTimestamp = false) {
         });
 
         currentGroup.splice(localIndex, 1);
-
         saveData(true);
         showDuplicateGroupModal();
     }
