@@ -731,10 +731,7 @@
 
     sectionSelect.addEventListener('change', (e) => {
         selectedSection = e.target.value;
-        const activeExamples = getFilteredExamples();
-        const availableClassifications = classifications.filter(ch => 
-            ch.section === selectedSection && activeExamples.some(link => link.classification === ch.name)
-        );
+        const availableClassifications = classifications.filter(ch => ch.section === selectedSection);
         selectedClassification = availableClassifications[0] ? availableClassifications[0].name : "";
         saveNavigationState();
         renderAll();
@@ -817,19 +814,13 @@
                 }
             }
 
-            const activeExamples = getFilteredExamples();
-            const visibleSections = sections.filter(sec => {
-                const secClassifications = classifications.filter(ch => ch.section === sec);
-                return secClassifications.some(ch => activeExamples.some(link => link.classification === ch.name));
-            });
+            const visibleSections = sections;
 
             if (!visibleSections.includes(selectedSection)) {
                 selectedSection = visibleSections[0] || sections[0] || "Miscellaneous";
             }
 
-            const visibleClassifications = classifications.filter(ch => 
-                ch.section === selectedSection && activeExamples.some(link => link.classification === ch.name)
-            );
+            const visibleClassifications = classifications.filter(ch => ch.section === selectedSection);
 
             if (!visibleClassifications.some(ch => ch.name === selectedClassification)) {
                 selectedClassification = visibleClassifications[0] ? visibleClassifications[0].name : "";
@@ -936,11 +927,7 @@
         sectionList.innerHTML = '';
         sectionSelect.innerHTML = '';
 
-        const activeExamples = getFilteredExamples();
-        const visibleSections = sections.filter(sec => {
-            const secClassifications = classifications.filter(ch => ch.section === sec);
-            return secClassifications.some(ch => activeExamples.some(link => link.classification === ch.name));
-        });
+        const visibleSections = sections;
 
         visibleSections.forEach(sec => {
             const link = document.createElement('a');
@@ -950,9 +937,7 @@
             link.onclick = (e) => {
                 e.preventDefault();
                 selectedSection = sec;
-                const visibleChs = classifications.filter(ch => 
-                    ch.section === selectedSection && activeExamples.some(link => link.classification === ch.name)
-                );
+                const visibleChs = classifications.filter(ch => ch.section === selectedSection);
                 selectedClassification = visibleChs[0] ? visibleChs[0].name : "";
                 saveNavigationState();
                 renderAll();
@@ -972,10 +957,7 @@
         classificationList.innerHTML = '';
         classificationSelect.innerHTML = '';
 
-        const activeExamples = getFilteredExamples();
-        const visibleClassifications = classifications.filter(ch => 
-            ch.section === selectedSection && activeExamples.some(link => link.classification === ch.name)
-        );
+        const visibleClassifications = classifications.filter(ch => ch.section === selectedSection);
 
         visibleClassifications.forEach(chObj => {
             const count = examples.filter(item => item.classification === chObj.name).length;
@@ -1409,10 +1391,7 @@
         if (topicSearchInputMobile) topicSearchInputMobile.value = topicSearchQuery;
         if (topicSearchInputDesktop) topicSearchInputDesktop.value = topicSearchQuery;
         
-        const activeExamples = getFilteredExamples();
-        const availableClassifications = classifications.filter(ch => 
-            activeExamples.some(link => link.classification === ch.name)
-        );
+        const availableClassifications = classifications.filter(ch => ch.section === selectedSection);
         
         if (!availableClassifications.some(ch => ch.name === selectedClassification)) {
             selectedClassification = availableClassifications[0] ? availableClassifications[0].name : "";
