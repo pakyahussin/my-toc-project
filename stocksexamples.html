@@ -731,7 +731,11 @@
 
     sectionSelect.addEventListener('change', (e) => {
         selectedSection = e.target.value;
-        const availableClassifications = classifications.filter(ch => ch.section === selectedSection);
+        const isSearching = topicSearchQuery.trim() !== '';
+        const activeExamples = getFilteredExamples();
+        const availableClassifications = isSearching 
+            ? classifications.filter(ch => ch.section === selectedSection && activeExamples.some(link => link.classification === ch.name))
+            : classifications.filter(ch => ch.section === selectedSection);
         selectedClassification = availableClassifications[0] ? availableClassifications[0].name : "";
         saveNavigationState();
         renderAll();
@@ -814,13 +818,22 @@
                 }
             }
 
-            const visibleSections = sections;
+            const isSearching = topicSearchQuery.trim() !== '';
+            const activeExamples = getFilteredExamples();
+            const visibleSections = isSearching 
+                ? sections.filter(sec => {
+                    const secClassifications = classifications.filter(ch => ch.section === sec);
+                    return secClassifications.some(ch => activeExamples.some(link => link.classification === ch.name));
+                  })
+                : sections;
 
             if (!visibleSections.includes(selectedSection)) {
                 selectedSection = visibleSections[0] || sections[0] || "Miscellaneous";
             }
 
-            const visibleClassifications = classifications.filter(ch => ch.section === selectedSection);
+            const visibleClassifications = isSearching
+                ? classifications.filter(ch => ch.section === selectedSection && activeExamples.some(link => link.classification === ch.name))
+                : classifications.filter(ch => ch.section === selectedSection);
 
             if (!visibleClassifications.some(ch => ch.name === selectedClassification)) {
                 selectedClassification = visibleClassifications[0] ? visibleClassifications[0].name : "";
@@ -927,7 +940,14 @@
         sectionList.innerHTML = '';
         sectionSelect.innerHTML = '';
 
-        const visibleSections = sections;
+        const isSearching = topicSearchQuery.trim() !== '';
+        const activeExamples = getFilteredExamples();
+        const visibleSections = isSearching 
+            ? sections.filter(sec => {
+                const secClassifications = classifications.filter(ch => ch.section === sec);
+                return secClassifications.some(ch => activeExamples.some(link => link.classification === ch.name));
+              })
+            : sections;
 
         visibleSections.forEach(sec => {
             const link = document.createElement('a');
@@ -937,7 +957,9 @@
             link.onclick = (e) => {
                 e.preventDefault();
                 selectedSection = sec;
-                const visibleChs = classifications.filter(ch => ch.section === selectedSection);
+                const visibleChs = isSearching 
+                    ? classifications.filter(ch => ch.section === selectedSection && activeExamples.some(link => link.classification === ch.name))
+                    : classifications.filter(ch => ch.section === selectedSection);
                 selectedClassification = visibleChs[0] ? visibleChs[0].name : "";
                 saveNavigationState();
                 renderAll();
@@ -957,7 +979,11 @@
         classificationList.innerHTML = '';
         classificationSelect.innerHTML = '';
 
-        const visibleClassifications = classifications.filter(ch => ch.section === selectedSection);
+        const isSearching = topicSearchQuery.trim() !== '';
+        const activeExamples = getFilteredExamples();
+        const visibleClassifications = isSearching
+            ? classifications.filter(ch => ch.section === selectedSection && activeExamples.some(link => link.classification === ch.name))
+            : classifications.filter(ch => ch.section === selectedSection);
 
         visibleClassifications.forEach(chObj => {
             const count = examples.filter(item => item.classification === chObj.name).length;
@@ -1391,7 +1417,11 @@
         if (topicSearchInputMobile) topicSearchInputMobile.value = topicSearchQuery;
         if (topicSearchInputDesktop) topicSearchInputDesktop.value = topicSearchQuery;
         
-        const availableClassifications = classifications.filter(ch => ch.section === selectedSection);
+        const isSearching = topicSearchQuery.trim() !== '';
+        const activeExamples = getFilteredExamples();
+        const availableClassifications = isSearching
+            ? classifications.filter(ch => activeExamples.some(link => link.classification === ch.name))
+            : classifications.filter(ch => ch.section === selectedSection);
         
         if (!availableClassifications.some(ch => ch.name === selectedClassification)) {
             selectedClassification = availableClassifications[0] ? availableClassifications[0].name : "";
