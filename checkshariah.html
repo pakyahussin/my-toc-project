@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Check Shariah Status - Public</title>
+    <title>Check Shariah Status</title>
     <style>
         body {
             margin: 0;
@@ -32,6 +32,26 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
             width: 100%;
             box-sizing: border-box;
+        }
+        .header-bar {
+            width: 100%;
+            max-width: 1100px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+        .header-bar button {
+            background-color: #757575;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .header-bar button:hover {
+            background-color: #616161;
         }
         .table-container {
             background: #ffffff;
@@ -112,6 +132,9 @@
             user-select: none;
             font-weight: 500;
         }
+        .status-cell.editable {
+            cursor: pointer;
+        }
         .status-shariah {
             color: #28a745;
             background-color: #e6f9ec;
@@ -136,8 +159,6 @@
             line-height: 1.6;
             color: #333;
         }
-
-        /* Hyperlink styling (no underline by default, underline on hover) */
         .info-text a {
             color: #007bff;
             text-decoration: none;
@@ -161,7 +182,34 @@
             cursor: pointer;
             margin: 0;
         }
-        /* Auto-resizing Modal (fits screen, no vertical scrolling) */
+
+        /* Login Modal for Admin */
+        .admin-login-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .login-box {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .login-box h2 { margin: 0 0 10px 0; font-size: 18px; text-align: center; }
+        .login-box input { padding: 8px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; }
+        .login-box button { background-color: #2196F3; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-left: 0; }
+        .login-box button:hover { background-color: #0b7dda; }
+        #auth-error { color: red; font-size: 12px; margin: 0; display: none; }
+
+        /* Auto-resizing Modal Image Popup */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -205,7 +253,7 @@
             z-index: 1010;
         }
 
-        /* Mobile specific adjustments (keeps desktop completely untouched) */
+        /* Mobile specific adjustments */
         @media screen and (max-width: 768px) {
             body {
                 padding: 15px 10px;
@@ -238,7 +286,26 @@
 </head>
 <body>
 
-    <div class="main-container">
+    <!-- Admin Login Overlay -->
+    <div class="admin-login-overlay" id="login-overlay" style="display: none;">
+        <div class="login-box">
+            <h2>Admin Login</h2>
+            <input type="email" id="login-email" placeholder="Email" autocomplete="username">
+            <input type="password" id="login-password" placeholder="Password" autocomplete="current-password">
+            <button id="login-btn">Sign In</button>
+            <p id="auth-error"></p>
+        </div>
+    </div>
+
+    <!-- Main Content App -->
+    <div id="main-app" class="main-container">
+
+        <!-- Header bar visible only in Admin mode -->
+        <div class="header-bar" id="admin-header" style="display: none;">
+            <span>Logged in as Admin</span>
+            <button id="logout-btn">Log Out</button>
+        </div>
+
         <div class="container">
             <form id="stockForm" onsubmit="searchStock(event)">
                 <label for="stockInput">Find Stock :</label>
@@ -294,15 +361,24 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- Populated dynamically from Firebase -->
+                    <!-- Dynamic Rows populated from Firebase -->
                 </tbody>
             </table>
         </div>
     </div>
 
+    <!-- Modal Popup for Help Image -->
+    <div id="imageModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal(event)">&times;</span>
+            <img src="https://pakyanotes.com/media/editor/1791857773800-image.png" alt="Allow Popups Help">
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-        import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+        import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBgDtEmsmmglLcx6BbzR-IfFZ31duTPOag",
@@ -315,17 +391,78 @@
         };
 
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = initializeFirestore(app, {
             localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
         });
         const stockDocRef = doc(db, "app_data", "shariah_stocks");
 
         let globalStocks = [];
-        
+        let isAdmin = window.location.hash.includes('#admin');
+        let currentUser = null;
+
         let currentSort = JSON.parse(localStorage.getItem('stockSortState')) || { column: 'date', direction: 'desc' };
 
+        // Handle URL Hash Changes dynamically
+        window.addEventListener('hashchange', () => {
+            const newIsAdmin = window.location.hash.includes('#admin');
+            if (newIsAdmin !== isAdmin) {
+                isAdmin = newIsAdmin;
+                updateModeState();
+            }
+        });
+
+        function updateModeState() {
+            const loginOverlay = document.getElementById('login-overlay');
+            const adminHeader = document.getElementById('admin-header');
+            const mainApp = document.getElementById('main-app');
+
+            if (isAdmin) {
+                // Admin Mode: requires auth check
+                if (currentUser) {
+                    loginOverlay.style.display = 'none';
+                    adminHeader.style.display = 'flex';
+                    mainApp.style.display = 'flex';
+                } else {
+                    loginOverlay.style.display = 'flex';
+                    adminHeader.style.display = 'none';
+                    mainApp.style.display = 'none';
+                }
+            } else {
+                // Public Mode: no auth required
+                loginOverlay.style.display = 'none';
+                adminHeader.style.display = 'none';
+                mainApp.style.display = 'flex';
+            }
+            renderAndFilterTable();
+        }
+
+        // Firebase Auth listener
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            updateModeState();
+        });
+
+        // Admin Auth Handlers
+        document.getElementById('login-btn').addEventListener('click', async () => {
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value.trim();
+            const authError = document.getElementById('auth-error');
+            authError.style.display = 'none';
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                authError.textContent = "Invalid login credentials.";
+                authError.style.display = 'block';
+            }
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+
+        // Preferences Management
         function loadPreferences() {
-            let prefs = JSON.parse(localStorage.getItem('stockLinkPreferences'));
+            let prefsKey = isAdmin ? 'adminStockLinkPreferences' : 'stockLinkPreferences';
+            let prefs = JSON.parse(localStorage.getItem(prefsKey)) || JSON.parse(localStorage.getItem('stockLinkPreferences'));
             if (!prefs) {
                 prefs = {
                     chkIslamicly: false,
@@ -350,24 +487,61 @@
                 chkMuslimXChange: document.getElementById('chkMuslimXChange').checked,
                 chkSpFunds: document.getElementById('chkSpFunds').checked
             };
-            localStorage.setItem('stockLinkPreferences', JSON.stringify(prefs));
-        }
+            let prefsKey = isAdmin ? 'adminStockLinkPreferences' : 'stockLinkPreferences';
+            localStorage.setItem(prefsKey, JSON.stringify(prefs));
+        };
 
         loadPreferences();
 
+        let savedThreshold = localStorage.getItem('shariahThreshold') || '4';
+        document.getElementById('shariahThreshold').value = savedThreshold;
+
+        window.updateThreshold = function() {
+            let val = document.getElementById('shariahThreshold').value;
+            localStorage.setItem('shariahThreshold', val);
+            renderAndFilterTable();
+        };
+
+        // Stock Search Handlers
         window.searchStock = function(event) {
             event.preventDefault();
             let ticker = document.getElementById('stockInput').value.trim();
             if (!ticker) return;
+
+            let upperTicker = ticker.toUpperCase();
             openStockLinks(ticker);
+
+            if (isAdmin) {
+                let now = new Date();
+                let existingStock = globalStocks.find(s => s.ticker.toUpperCase() === upperTicker);
+
+                if (existingStock) {
+                    // Reset date & time for existing stock
+                    existingStock.dateTime = formatCustomDate(now);
+                    saveToFirebase();
+                } else {
+                    // Add new stock to table
+                    globalStocks.unshift({
+                        ticker: upperTicker,
+                        dateTime: formatCustomDate(now),
+                        islamicly: 0,
+                        zoya: 0,
+                        musaffa: 0,
+                        muslimXChange: 0,
+                        spFunds: 0
+                    });
+                    saveToFirebase();
+                }
+            }
+
             document.getElementById('stockInput').value = '';
             filterTable();
-        }
+        };
 
         window.clearSearch = function() {
             document.getElementById('stockInput').value = '';
             filterTable();
-        }
+        };
 
         window.openStockLinks = function(ticker) {
             let lowerTicker = ticker.toLowerCase();
@@ -391,7 +565,18 @@
             }
 
             linksToOpen.forEach(url => window.open(url, '_blank'));
-        }
+        };
+
+        window.handleStockClick = function(ticker) {
+            openStockLinks(ticker);
+            if (isAdmin) {
+                let existingStock = globalStocks.find(s => s.ticker.toUpperCase() === ticker.toUpperCase());
+                if (existingStock) {
+                    existingStock.dateTime = formatCustomDate(new Date());
+                    saveToFirebase();
+                }
+            }
+        };
 
         window.sortTable = function(column) {
             if (currentSort.column === column) {
@@ -402,25 +587,31 @@
             }
             localStorage.setItem('stockSortState', JSON.stringify(currentSort));
             renderAndFilterTable();
-        }
+        };
 
         window.filterTable = function() {
             renderAndFilterTable();
+        };
+
+        function saveToFirebase() {
+            setDoc(stockDocRef, { stocks: globalStocks }, { merge: true }).catch(err => {
+                console.error("Error saving to Firebase:", err);
+            });
         }
 
-        let savedThreshold = localStorage.getItem('shariahThreshold') || '4';
-        document.getElementById('shariahThreshold').value = savedThreshold;
-
-        window.updateThreshold = function() {
-            let val = document.getElementById('shariahThreshold').value;
-            localStorage.setItem('shariahThreshold', val);
+        onSnapshot(stockDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                globalStocks = docSnap.data().stocks || [];
+            } else {
+                globalStocks = [];
+            }
             renderAndFilterTable();
-        }
+        });
 
         function renderAndFilterTable() {
             let query = document.getElementById('stockInput').value.trim().toLowerCase();
             let filtered = globalStocks.filter(item => item.ticker.toLowerCase().includes(query));
-            
+
             filtered.sort((a, b) => {
                 let valA, valB;
                 if (currentSort.column === 'name') {
@@ -450,29 +641,37 @@
         function renderTable(stocks) {
             let tbody = document.querySelector('#stockTable tbody');
             tbody.innerHTML = '';
-            
+
             let threshold = parseInt(document.getElementById('shariahThreshold').value, 10);
 
-            stocks.forEach(item => {
+            stocks.forEach((item) => {
                 let row = tbody.insertRow();
                 let cellStock = row.insertCell(0);
                 let cellLastUpdate = row.insertCell(1);
 
                 let statuses = [item.islamicly, item.zoya, item.musaffa, item.muslimXChange, item.spFunds];
                 let shariahCount = statuses.filter(val => val === 1).length;
-
                 let complianceClass = shariahCount >= threshold ? 'status-shariah' : 'status-non-shariah';
 
                 cellStock.className = `status-cell ${complianceClass}`;
                 cellLastUpdate.className = `status-cell ${complianceClass}`;
 
-                cellStock.innerHTML = `<a class="stock-link" onclick="openStockLinks('${item.ticker}')">${item.ticker}</a>`;
+                cellStock.innerHTML = `<a class="stock-link" onclick="handleStockClick('${item.ticker}')">${item.ticker}</a>`;
                 cellLastUpdate.textContent = formatRelativeTime(item.dateTime);
 
-                statuses.forEach((statusVal, idx) => {
-                    let cell = row.insertCell(idx + 2);
-                    cell.className = `status-cell ${getStatusClass(statusVal)}`;
-                    cell.textContent = getStatusText(statusVal);
+                let keys = ['islamicly', 'zoya', 'musaffa', 'muslimXChange', 'spFunds'];
+                keys.forEach((key, kidx) => {
+                    let cell = row.insertCell(kidx + 2);
+                    let val = item[key] || 0;
+                    cell.className = `status-cell ${getStatusClass(val)} ${isAdmin ? 'editable' : ''}`;
+                    cell.textContent = getStatusText(val);
+
+                    if (isAdmin) {
+                        cell.addEventListener('click', function() {
+                            item[key] = (val + 1) % 3;
+                            saveToFirebase();
+                        });
+                    }
                 });
 
                 let cellCopy = row.insertCell(statuses.length + 2);
@@ -533,6 +732,25 @@
             });
         };
 
+        function formatCustomDate(dateObj) {
+            const d = new Date(dateObj);
+            if (isNaN(d.getTime())) return dateObj;
+
+            const day = String(d.getDate()).padStart(2, '0');
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const month = months[d.getMonth()];
+            const year = String(d.getFullYear()).slice(-2);
+
+            let hours = d.getHours();
+            const minutes = String(d.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            const strHours = String(hours).padStart(2, '0');
+
+            return `${day}-${month}-${year} , ${strHours}:${minutes} ${ampm}`;
+        }
+
         function updateSortIndicators() {
             document.getElementById('sortNameIcon').textContent = '';
             document.getElementById('sortDateIcon').textContent = '';
@@ -557,33 +775,19 @@
             return 'status-na';
         }
 
-        onSnapshot(stockDocRef, (docSnap) => {
-            if (docSnap.exists()) {
-                let data = docSnap.data();
-                globalStocks = data.stocks || [];
-            } else {
-                globalStocks = [];
-            }
-            renderAndFilterTable();
-        });
-
+        // Help Modal Popup controls
         window.openModal = function() {
             document.getElementById('imageModal').style.display = 'flex';
-        }
+        };
 
         window.closeModal = function(e) {
             if (e.target.id === 'imageModal' || e.target.classList.contains('close-btn')) {
                 document.getElementById('imageModal').style.display = 'none';
             }
-        }
-    </script>
+        };
 
-    <!-- Modal Popup -->
-    <div id="imageModal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeModal(event)">&times;</span>
-            <img src="https://pakyanotes.com/media/editor/1791857773800-image.png" alt="Allow Popups Help">
-        </div>
-    </div>
+        // Initialize state on page load
+        updateModeState();
+    </script>
 </body>
 </html>
