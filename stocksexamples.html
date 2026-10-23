@@ -1240,12 +1240,28 @@
     }
 
     function renderModalTable() {
-        document.querySelector('#modal-overlay .modal-header h3').textContent = `Manage Examples : ${selectedClassification}`;
+        const isSearching = topicSearchQuery.trim() !== '';
+        
+        if (isSearching) {
+            document.querySelector('#modal-overlay .modal-header h3').textContent = `Manage Examples : Search Filter (${topicSearchQuery})`;
+        } else {
+            document.querySelector('#modal-overlay .modal-header h3').textContent = `Manage Examples : ${selectedClassification}`;
+        }
         modalTableBody.innerHTML = '';
 
+        const query = topicSearchQuery.toLowerCase().trim();
         const filtered = examples
             .map((item, originalIndex) => ({ ...item, originalIndex }))
-            .filter(item => item.classification === selectedClassification);
+            .filter(item => {
+                if (isSearching) {
+                    const textMatches = item.text && item.text.toLowerCase().includes(query);
+                    const classMatches = item.classification && item.classification.toLowerCase().includes(query);
+                    const urlMatches = item.url && item.url.toLowerCase().includes(query);
+                    return textMatches || classMatches || urlMatches;
+                } else {
+                    return item.classification === selectedClassification;
+                }
+            });
 
         filtered.forEach((item, displayIndex) => {
             const row = document.createElement('tr');
