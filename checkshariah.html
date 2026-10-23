@@ -330,7 +330,7 @@
                 <label><input type="checkbox" id="chkZoya" onchange="savePreferences()"> Zoya</label>
                 <label><input type="checkbox" id="chkSpFunds" onchange="savePreferences()"> SP-Funds.com</label>
                 <label><input type="checkbox" id="chkMusaffa" onchange="savePreferences()"> Musaffa</label>
-                <div></div>
+                <label><input type="checkbox" id="chkHalalSh" onchange="savePreferences()"> Halal.sh</label>
             </div>
         </div>
 
@@ -342,8 +342,9 @@
                 <option value="3">3</option>
                 <option value="4">4</option>
                 <option value="5">5</option>
+                <option value="6">6</option>
             </select>
-            <span style="font-size: 18px; font-weight: 500; margin-left: 10px;">/ 5 shariah compliant</span>
+            <span style="font-size: 18px; font-weight: 500; margin-left: 10px;">/ 6 shariah compliant</span>
         </div>
 
         <div class="table-container">
@@ -357,6 +358,7 @@
                         <th>Musaffa</th>
                         <th>MuslimXChange</th>
                         <th>SP-Funds.Com</th>
+                        <th>halal.sh</th>
                         <th>Copy</th>
                     </tr>
                 </thead>
@@ -469,7 +471,8 @@
                     chkZoya: true,
                     chkMusaffa: true,
                     chkMuslimXChange: true,
-                    chkSpFunds: true
+                    chkSpFunds: true,
+                    chkHalalSh: true
                 };
             }
             document.getElementById('chkIslamicly').checked = !!prefs.chkIslamicly;
@@ -477,6 +480,7 @@
             document.getElementById('chkMusaffa').checked = !!prefs.chkMusaffa;
             document.getElementById('chkMuslimXChange').checked = !!prefs.chkMuslimXChange;
             document.getElementById('chkSpFunds').checked = !!prefs.chkSpFunds;
+            document.getElementById('chkHalalSh').checked = !!prefs.chkHalalSh;
         }
 
         window.savePreferences = function() {
@@ -485,7 +489,8 @@
                 chkZoya: document.getElementById('chkZoya').checked,
                 chkMusaffa: document.getElementById('chkMusaffa').checked,
                 chkMuslimXChange: document.getElementById('chkMuslimXChange').checked,
-                chkSpFunds: document.getElementById('chkSpFunds').checked
+                chkSpFunds: document.getElementById('chkSpFunds').checked,
+                chkHalalSh: document.getElementById('chkHalalSh').checked
             };
             let prefsKey = isAdmin ? 'adminStockLinkPreferences' : 'stockLinkPreferences';
             localStorage.setItem(prefsKey, JSON.stringify(prefs));
@@ -528,7 +533,8 @@
                         zoya: 0,
                         musaffa: 0,
                         muslimXChange: 0,
-                        spFunds: 0
+                        spFunds: 0,
+                        halalSh: 0
                     });
                     saveToFirebase();
                 }
@@ -562,6 +568,9 @@
             }
             if (document.getElementById('chkSpFunds').checked) {
                 linksToOpen.push(`https://spscreener.mxcorporate.com/ticker/${lowerTicker}`);
+            }
+            if (document.getElementById('chkHalalSh').checked) {
+                linksToOpen.push(`https://halal.sh/stock/${upperTicker}`);
             }
 
             linksToOpen.forEach(url => window.open(url, '_blank'));
@@ -649,7 +658,7 @@
                 let cellStock = row.insertCell(0);
                 let cellLastUpdate = row.insertCell(1);
 
-                let statuses = [item.islamicly, item.zoya, item.musaffa, item.muslimXChange, item.spFunds];
+                let statuses = [item.islamicly, item.zoya, item.musaffa, item.muslimXChange, item.spFunds, item.halalSh];
                 let shariahCount = statuses.filter(val => val === 1).length;
                 let complianceClass = shariahCount >= threshold ? 'status-shariah' : 'status-non-shariah';
 
@@ -659,7 +668,7 @@
                 cellStock.innerHTML = `<a class="stock-link" onclick="handleStockClick('${item.ticker}')">${item.ticker}</a>`;
                 cellLastUpdate.textContent = formatRelativeTime(item.dateTime);
 
-                let keys = ['islamicly', 'zoya', 'musaffa', 'muslimXChange', 'spFunds'];
+                let keys = ['islamicly', 'zoya', 'musaffa', 'muslimXChange', 'spFunds', 'halalSh'];
                 keys.forEach((key, kidx) => {
                     let cell = row.insertCell(kidx + 2);
                     let val = item[key] || 0;
@@ -713,8 +722,8 @@
             let item = globalStocks.find(s => s.ticker.toUpperCase() === ticker.toUpperCase());
             if (!item) return;
 
-            let serviceNames = ["Islamicly", "Zoya", "Musaffa", "MuslimXChange", "SP-Funds.Com"];
-            let statuses = [item.islamicly, item.zoya, item.musaffa, item.muslimXChange, item.spFunds];
+            let serviceNames = ["Islamicly", "Zoya", "Musaffa", "MuslimXChange", "SP-Funds.Com", "Halal.sh"];
+            let statuses = [item.islamicly, item.zoya, item.musaffa, item.muslimXChange, item.spFunds, item.halalSh];
             
             let compliantList = [];
             statuses.forEach((val, idx) => {
@@ -725,7 +734,7 @@
             let listStr = compliantList.join(" , ");
             let lastCheckStr = formatCopyDate(item.dateTime);
 
-            let textToCopy = `Shariah : ${shariahCount} / 5\n\nList shariah : ${listStr}\n\nLast check : ${lastCheckStr}`;
+            let textToCopy = `Shariah : ${shariahCount} / 6\n\nList shariah : ${listStr}\n\nLast check : ${lastCheckStr}`;
 
             navigator.clipboard.writeText(textToCopy).catch(err => {
                 console.error('Failed to copy: ', err);
