@@ -420,6 +420,33 @@
         .mobile-only {
             display: none;
         }
+
+        /* Search Results Formatting Styles */
+        .search-group-row {
+            display: grid;
+            grid-template-columns: max-content 1fr;
+            column-gap: 12px;
+            row-gap: 4px;
+            align-items: baseline;
+            width: 100%;
+            font-family: monospace, Arial, sans-serif;
+            font-size: 14px;
+        }
+        .search-group-title {
+            font-weight: normal;
+            color: #000000;
+            white-space: nowrap;
+        }
+        .search-class-item {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        .search-class-item:not(:first-child) {
+            grid-column: 2;
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 12px;
@@ -753,7 +780,7 @@
     function sortExamplesArray() {
         examples.sort((a, b) => {
             const getYear = (str) => {
-                const match = str.match(/(\d{4})\s*$/);
+                const match = str.match(/(\d{4})/);
                 return match ? parseInt(match[1], 10) : 0;
             };
             const yearA = getYear(a.text);
@@ -925,6 +952,15 @@
     const addSectionBtn = document.getElementById('add-section-btn');
 
     function renderAll() {
+        const isSearching = topicSearchQuery.trim() !== '';
+        const classificationsContainer = document.getElementById('classifications-container');
+
+        if (isSearching) {
+            classificationsContainer.classList.add('hidden-container');
+        } else {
+            classificationsContainer.classList.remove('hidden-container');
+        }
+
         renderSectionList();
         renderClassificationList();
         renderMainExamples();
@@ -941,13 +977,17 @@
         sectionSelect.innerHTML = '';
 
         const isSearching = topicSearchQuery.trim() !== '';
-        const activeExamples = getFilteredExamples();
-        const visibleSections = isSearching 
-            ? sections.filter(sec => {
-                const secClassifications = classifications.filter(ch => ch.section === sec);
-                return secClassifications.some(ch => activeExamples.some(link => link.classification === ch.name));
-              })
-            : sections;
+
+        if (isSearching) {
+            sectionList.style.display = 'none';
+            sectionSelect.style.display = 'none';
+            return;
+        } else {
+            sectionList.style.display = '';
+            sectionSelect.style.display = '';
+        }
+
+        const visibleSections = sections;
 
         visibleSections.forEach(sec => {
             const link = document.createElement('a');
@@ -957,9 +997,7 @@
             link.onclick = (e) => {
                 e.preventDefault();
                 selectedSection = sec;
-                const visibleChs = isSearching 
-                    ? classifications.filter(ch => ch.section === selectedSection && activeExamples.some(link => link.classification === ch.name))
-                    : classifications.filter(ch => ch.section === selectedSection);
+                const visibleChs = classifications.filter(ch => ch.section === selectedSection);
                 selectedClassification = visibleChs[0] ? visibleChs[0].name : "";
                 saveNavigationState();
                 renderAll();
@@ -980,10 +1018,9 @@
         classificationSelect.innerHTML = '';
 
         const isSearching = topicSearchQuery.trim() !== '';
-        const activeExamples = getFilteredExamples();
-        const visibleClassifications = isSearching
-            ? classifications.filter(ch => ch.section === selectedSection && activeExamples.some(link => link.classification === ch.name))
-            : classifications.filter(ch => ch.section === selectedSection);
+        if (isSearching) return;
+
+        const visibleClassifications = classifications.filter(ch => ch.section === selectedSection);
 
         visibleClassifications.forEach(chObj => {
             const count = examples.filter(item => item.classification === chObj.name).length;
@@ -1013,7 +1050,84 @@
 
     function renderMainExamples() {
         exampleList.innerHTML = '';
+        const isSearching = topicSearchQuery.trim() !== '';
         
+        if (isSearching) {
+            document.getElementById('current-classification-title').textContent = `Examples : ${topicSearchQuery.toUpperCase()}`;
+            
+            exampleList.style.display = 'flex';
+            exampleList.style.flexDirection = 'column';
+            exampleList.style.alignItems = 'flex-start';
+            exampleList.style.gap = '16px';
+            exampleList.style.columnCount = '';
+            exampleList.style.columnGap = '';
+
+            const matchingExamples = getFilteredExamples();
+
+            const groupedMap = new Map();
+
+            matchingExamples.forEach(item => {
+                if (!groupedMap.has(item.text)) {
+                    groupedMap.set(item.text, []);
+                }
+                groupedMap.get(item.text).push(item);
+            });
+
+            const getYearFromText = (str) => {
+                const match = str.match(/(\d{4})/);
+                return match ? parseInt(match[1], 10) : 0;
+            };
+
+            const sortedGroupEntries = Array.from(groupedMap.entries()).sort((a, b) => {
+                const yearA = getYearFromText(a[0]);
+                const yearB = getYearFromText(b[0]);
+                if (yearB !== yearA) return yearB - yearA;
+                return a[0].localeCompare(b[0]);
+            });
+
+            sortedGroupEntries.forEach(([exampleText, itemsGroup]) => {
+                const groupRow = document.createElement('div');
+                groupRow.className = 'search-group-row';
+
+                const titleSpan = document.createElement('span');
+                titleSpan.className = 'search-group-title';
+                titleSpan.textContent = exampleText;
+                groupRow.appendChild(titleSpan);
+
+                itemsGroup.forEach((item, index) => {
+                    const classItem = document.createElement('div');
+                    classItem.className = 'search-class-item';
+
+                    const dashSpan = document.createElement('span');
+                    dashSpan.textContent = '-';
+                    dashSpan.style.color = '#000000';
+                    classItem.appendChild(dashSpan);
+
+                    const hasUrl = item.url && item.url.trim() !== '';
+                    if (hasUrl) {
+                        const anchor = document.createElement('a');
+                        anchor.href = item.url.match(/^https?:\/\//i) ? item.url : 'https://' + item.url;
+                        anchor.textContent = item.classification;
+                        anchor.target = "_blank";
+                        anchor.rel = "noopener noreferrer";
+                        anchor.style.color = '#0000ee';
+                        classItem.appendChild(anchor);
+                    } else {
+                        const classSpan = document.createElement('span');
+                        classSpan.textContent = item.classification;
+                        classSpan.style.color = '#000000';
+                        classItem.appendChild(classSpan);
+                    }
+
+                    groupRow.appendChild(classItem);
+                });
+
+                exampleList.appendChild(groupRow);
+            });
+
+            return;
+        }
+
         const headerText = selectedClassification ? `Examples : ${selectedClassification}` : "No Classification Selected";
         document.getElementById('current-classification-title').textContent = headerText;
 
@@ -1035,7 +1149,7 @@
             exampleList.style.columnGap = '';
         }
 
-        const filtered = getFilteredExamples().filter(item => item.classification === selectedClassification);
+        const filtered = examples.filter(item => item.classification === selectedClassification);
         filtered.forEach(item => {
             const hasUrl = item.url && item.url.trim() !== '';
 
@@ -1417,21 +1531,6 @@
         if (topicSearchInputMobile) topicSearchInputMobile.value = topicSearchQuery;
         if (topicSearchInputDesktop) topicSearchInputDesktop.value = topicSearchQuery;
         
-        const isSearching = topicSearchQuery.trim() !== '';
-        const activeExamples = getFilteredExamples();
-        const availableClassifications = isSearching
-            ? classifications.filter(ch => activeExamples.some(link => link.classification === ch.name))
-            : classifications.filter(ch => ch.section === selectedSection);
-        
-        if (!availableClassifications.some(ch => ch.name === selectedClassification)) {
-            selectedClassification = availableClassifications[0] ? availableClassifications[0].name : "";
-        }
-        
-        if (selectedClassification) {
-            const currentChObj = classifications.find(ch => ch.name === selectedClassification);
-            if (currentChObj) selectedSection = currentChObj.section;
-        }
-
         saveNavigationState();
         renderAll();
     }
