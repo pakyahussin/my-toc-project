@@ -687,6 +687,19 @@
             font-weight: bold;
         }
 
+        .add-topic-mode-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .add-topic-mode-btn:hover {
+            background-color: #45a049;
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 12px;
@@ -849,6 +862,7 @@
             <div class="button-row">
                 <button id="edit-btn" class="mode-btn-read">Read Mode</button>
                 <button id="check-double-dates-btn">Check Double Dates</button>
+                <button id="open-add-topic-modal-btn" style="display: none;" class="target-btn-blue">Add New Topic</button>
             </div>
             <h3 id="current-chapter-title">Topics</h3>
             <div id="link-list"></div>
@@ -1056,6 +1070,7 @@
     let lastUpdatedTimestamp = null;
     let isEditMode = false;
     let editingLinkIndex = null;
+    let isAddingNewTopic = false;
 
     function normalizeItemChapters(item) {
         if (Array.isArray(item.chapters) && item.chapters.length > 0) {
@@ -1712,16 +1727,38 @@
         }
     }
 
+    const openAddTopicModalBtn = document.getElementById('open-add-topic-modal-btn');
+
     editBtn.addEventListener('click', () => {
         isEditMode = !isEditMode;
         if (isEditMode) {
             editBtn.textContent = 'Edit Mode';
             editBtn.className = 'mode-btn-edit';
+            openAddTopicModalBtn.style.display = 'inline-block'; // Show button
         } else {
             editBtn.textContent = 'Read Mode';
             editBtn.className = 'mode-btn-read';
+            openAddTopicModalBtn.style.display = 'none'; // Hide button
         }
         renderMainLinks();
+    });
+
+    openAddTopicModalBtn.addEventListener('click', () => {
+        isAddingNewTopic = true;
+        editingLinkIndex = null;
+        
+        // Change modal title header to Add New Topic
+        const modalHeaderTitle = editTopicModalOverlay.querySelector('.modal-header h3');
+        if (modalHeaderTitle) modalHeaderTitle.textContent = "Add New Topic";
+
+        editTopicTitleInput.value = '';
+        editTopicLinkInput.value = '';
+
+        // Default to the currently selected chapter
+        const defaultTag = selectedChapter || (chapters[0] ? chapters[0].name : "Miscellaneous");
+        renderTagsUI([defaultTag]);
+
+        editTopicModalOverlay.style.display = 'flex';
     });
 
     const editTopicModalOverlay = document.getElementById('edit-topic-modal-overlay');
@@ -1747,6 +1784,7 @@
     function closeEditTopicModal() {
         editTopicModalOverlay.style.display = 'none';
         editingLinkIndex = null;
+        isAddingNewTopic = false;
     }
 
     closeEditTopicModalBtn.addEventListener('click', closeEditTopicModal);
@@ -1829,7 +1867,6 @@
     }
 
     saveEditTopicBtn.addEventListener('click', () => {
-        if (editingLinkIndex === null) return;
         const newText = editTopicTitleInput.value.trim();
         let newUrl = editTopicLinkInput.value.trim();
         let newTags = getSelectedTagsFromUI();
@@ -1847,22 +1884,31 @@
         if (!/^https?:\/\//i.test(newUrl)) newUrl = 'https://' + newUrl;
 
         // Automatically create new chapters if they don't exist yet
-        let chaptersUpdated = false;
         newTags.forEach(tagName => {
             if (tagName && !chapters.some(ch => ch.name.toLowerCase() === tagName.toLowerCase())) {
                 chapters.push({ name: tagName, section: selectedSection });
-                chaptersUpdated = true;
             }
         });
 
-        links[editingLinkIndex] = {
-            ...links[editingLinkIndex],
-            text: newText,
-            url: newUrl,
-            chapters: Array.from(new Set(newTags))
-        };
+        const cleanedTags = Array.from(new Set(newTags));
 
-        delete links[editingLinkIndex].chapter;
+        if (isAddingNewTopic) {
+            // Add to the beginning or end of the links array (let's add to the beginning so it's easy to see)
+            links.unshift({
+                text: newText,
+                url: newUrl,
+                chapters: cleanedTags
+            });
+        } else {
+            if (editingLinkIndex === null) return;
+            links[editingLinkIndex] = {
+                ...links[editingLinkIndex],
+                text: newText,
+                url: newUrl,
+                chapters: cleanedTags
+            };
+            delete links[editingLinkIndex].chapter;
+        }
 
         saveData(true);
         closeEditTopicModal();
