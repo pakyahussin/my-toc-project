@@ -129,7 +129,7 @@
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            gap: 12px;
+            gap: 20px;
         }
 
         .topic-row {
@@ -877,9 +877,10 @@
             <h3>Edit Topic</h3>
             <button class="close-btn" id="close-edit-topic-modal-btn">&times;</button>
         </div>
-        <div class="form-group">
+        <div class="form-group" style="position: relative;">
             <label for="edit-topic-title">Title text :</label>
-            <input type="text" id="edit-topic-title" placeholder="Topic title">
+            <input type="text" id="edit-topic-title" placeholder="Topic title" autocomplete="off">
+            <div id="topic-suggestions" style="position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #ccc; max-height: 150px; overflow-y: auto; display: none; z-index: 10; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"></div>
         </div>
         <div class="form-group">
             <label for="edit-topic-link">link :</label>
@@ -1744,6 +1745,7 @@
     });
 
     openAddTopicModalBtn.addEventListener('click', () => {
+        topicSuggestions.style.display = 'none';
         isAddingNewTopic = true;
         editingLinkIndex = null;
         
@@ -1769,7 +1771,66 @@
     const editTopicLinkInput = document.getElementById('edit-topic-link');
     const tagsContainer = document.getElementById('tags-container');
 
+    const topicSuggestions = document.getElementById('topic-suggestions');
+
+    // Show strict filtered suggestions in custom dropdown box
+    function showTopicSuggestions() {
+        topicSuggestions.innerHTML = '';
+        const query = editTopicTitleInput.value.trim().toLowerCase();
+        
+        const matches = links.filter(item => item.text && (!query || item.text.toLowerCase().includes(query)));
+        
+        if (matches.length === 0 || (query && matches.length === 1 && matches[0].text.toLowerCase() === query)) {
+            topicSuggestions.style.display = 'none';
+            return;
+        }
+
+        matches.forEach(item => {
+            const div = document.createElement('div');
+            div.textContent = item.text;
+            div.style.padding = '6px 8px';
+            div.style.cursor = 'pointer';
+            div.style.fontSize = '13px';
+            div.style.borderBottom = '1px solid #eee';
+
+            div.addEventListener('mouseenter', () => { div.style.backgroundColor = '#f0f0f0'; });
+            div.addEventListener('mouseleave', () => { div.style.backgroundColor = '#fff'; });
+
+            div.addEventListener('click', () => {
+                editTopicTitleInput.value = item.text;
+                editTopicLinkInput.value = item.url || '';
+                const itemTags = normalizeItemChapters(item);
+                renderTagsUI(itemTags);
+                topicSuggestions.style.display = 'none';
+            });
+
+            topicSuggestions.appendChild(div);
+        });
+
+        topicSuggestions.style.display = 'block';
+    }
+
+    editTopicTitleInput.addEventListener('input', () => {
+        showTopicSuggestions();
+
+        const val = editTopicTitleInput.value.trim().toLowerCase();
+        const matchedTopic = links.find(item => item.text && item.text.trim().toLowerCase() === val);
+        if (matchedTopic) {
+            editTopicLinkInput.value = matchedTopic.url || '';
+            const itemTags = normalizeItemChapters(matchedTopic);
+            renderTagsUI(itemTags);
+        }
+    });
+
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!editTopicTitleInput.contains(e.target) && !topicSuggestions.contains(e.target)) {
+            topicSuggestions.style.display = 'none';
+        }
+    });
+
     function openEditTopicModal(index) {
+        topicSuggestions.style.display = 'none';
         editingLinkIndex = index;
         const item = links[index];
         editTopicTitleInput.value = item.text || '';
