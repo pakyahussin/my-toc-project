@@ -129,7 +129,14 @@
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            gap: 20px;
+            gap: 12px;
+        }
+
+        .topic-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
         }
 
         a {
@@ -147,6 +154,27 @@
         #link-list a.visited {
             color: purple !important;
             text-decoration: line-through !important;
+        }
+
+        .icon-btn {
+            background: none;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            padding: 2px 6px;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-btn:hover {
+            background-color: #e0e0e0;
+        }
+
+        .icon-btn.delete-icon-btn:hover {
+            background-color: #ffcccc;
+            border-color: #ff4d4d;
         }
 
         .stats-btn {
@@ -207,6 +235,11 @@
             max-height: 85vh;
             display: flex;
             flex-direction: column;
+        }
+
+        .edit-topic-modal-content {
+            width: 420px;
+            max-width: 90%;
         }
 
         .stats-modal-content {
@@ -391,6 +424,78 @@
             background-color: #45a049;
         }
 
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            font-weight: bold;
+            font-size: 13px;
+        }
+
+        .form-group input {
+            padding: 6px 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .tag-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .tag-label {
+            font-size: 13px;
+            width: 50px;
+        }
+
+        .tag-select {
+            flex: 1;
+            padding: 6px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .save-btn {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .save-btn:hover {
+            background-color: #0b7dda;
+        }
+
+        .cancel-btn {
+            background-color: #757575;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .cancel-btn:hover {
+            background-color: #616161;
+        }
+
         tr.draggable {
             cursor: grab;
         }
@@ -410,6 +515,17 @@
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
+        }
+
+        .mode-btn-read {
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+        }
+
+        .mode-btn-edit {
+            background-color: #ff9800;
+            color: white;
+            border: 1px solid #e68a00;
         }
 
         .stats-container {
@@ -637,7 +753,7 @@
             }
 
             #link-list {
-                gap: 24px;
+                gap: 16px;
             }
 
             #link-list a {
@@ -731,41 +847,37 @@
         <!-- Topics Column -->
         <div class="content-container right-container">
             <div class="button-row">
-                <button id="edit-btn">Manage Links</button>
+                <button id="edit-btn" class="mode-btn-read">Read Mode</button>
                 <button id="check-double-dates-btn">Check Double Dates</button>
             </div>
-                <h3 id="current-chapter-title">Topics</h3>
+            <h3 id="current-chapter-title">Topics</h3>
             <div id="link-list"></div>
         </div>
     </div>
 </div>
 
-<!-- Manage Links Modal -->
-<div class="modal-overlay" id="modal-overlay">
-    <div class="modal-content">
+<!-- Edit Topic Modal -->
+<div class="modal-overlay" id="edit-topic-modal-overlay">
+    <div class="modal-content edit-topic-modal-content">
         <div class="modal-header">
-            <h3>Manage Links</h3>
-            <button class="close-btn" id="close-modal-btn">&times;</button>
+            <h3>Edit Topic</h3>
+            <button class="close-btn" id="close-edit-topic-modal-btn">&times;</button>
         </div>
-
-        <div class="table-wrapper">
-            <table class="link-table">
-                <thead>
-                    <tr>
-                        <th>Text</th>
-                        <th>Chapter</th>
-                        <th style="width: 120px;">Action</th>
-                    </tr>
-                </thead>
-                <tbody id="modal-table-body"></tbody>
-            </table>
+        <div class="form-group">
+            <label for="edit-topic-title">Title text :</label>
+            <input type="text" id="edit-topic-title" placeholder="Topic title">
         </div>
-
-        <div class="add-form">
-            <input type="text" id="new-text" placeholder="Display Text">
-            <input type="text" id="new-url" placeholder="URL (e.g., google.com)">
-            <select id="new-chapter"></select>
-            <button id="add-link-btn">Add New Link</button>
+        <div class="form-group">
+            <label for="edit-topic-link">link :</label>
+            <input type="text" id="edit-topic-link" placeholder="URL">
+        </div>
+        <div class="form-group">
+            <label>tags :</label>
+            <div id="tags-container"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="cancel-btn" id="cancel-edit-topic-btn">Cancel</button>
+            <button class="save-btn" id="save-edit-topic-btn">Save</button>
         </div>
     </div>
 </div>
@@ -942,6 +1054,18 @@
     let activeMonthFilter = null; 
     let randomNotesIndices = null;
     let lastUpdatedTimestamp = null;
+    let isEditMode = false;
+    let editingLinkIndex = null;
+
+    function normalizeItemChapters(item) {
+        if (Array.isArray(item.chapters) && item.chapters.length > 0) {
+            return item.chapters;
+        }
+        if (item.chapter) {
+            return [item.chapter];
+        }
+        return ["Miscellaneous"];
+    }
 
     function getLocalDateString(d = new Date()) {
         const year = d.getFullYear();
@@ -1034,7 +1158,10 @@
                     chapters = [{ name: "Miscellaneous", section: "Miscellaneous" }];
                 }
 
-                links = data.links || [];
+                links = (data.links || []).map(item => ({
+                    ...item,
+                    chapters: normalizeItemChapters(item)
+                }));
 
                 const savedSection = localStorage.getItem('selected_fcpo_section');
                 const savedChapter = localStorage.getItem('selected_fcpo_chapter');
@@ -1103,12 +1230,6 @@
 
     const editBtn = document.getElementById('edit-btn');
     const linkList = document.getElementById('link-list');
-    const modalOverlay = document.getElementById('modal-overlay');
-    const closeModalBtn = document.getElementById('close-modal-btn');
-    const modalTableBody = document.getElementById('modal-table-body');
-    const addLinkBtn = document.getElementById('add-link-btn');
-    const newTextInput = document.getElementById('new-text');
-    const newUrlInput = document.getElementById('new-url');
 
     const editSectionsBtn = document.getElementById('edit-sections-btn');
     const sectionModalOverlay = document.getElementById('section-modal-overlay');
@@ -1148,7 +1269,6 @@
         renderSectionList();
         renderChapterList();
         renderMainLinks();
-        populateChapterDropdown();
         updateContainerWidth();
         renderStats();
     }
@@ -1201,7 +1321,7 @@
         const activeTopics = getFilteredTopics();
         const visibleSections = sections.filter(sec => {
             const secChapters = chapters.filter(ch => ch.section === sec);
-            return secChapters.some(ch => activeTopics.some(link => link.chapter === ch.name));
+            return secChapters.some(ch => activeTopics.some(link => normalizeItemChapters(link).includes(ch.name)));
         });
 
         visibleSections.forEach(sec => {
@@ -1213,7 +1333,7 @@
                 e.preventDefault();
                 selectedSection = sec;
                 const visibleChs = chapters.filter(ch => 
-                    ch.section === selectedSection && activeTopics.some(link => link.chapter === ch.name)
+                    ch.section === selectedSection && activeTopics.some(link => normalizeItemChapters(link).includes(ch.name))
                 );
                 selectedChapter = visibleChs[0] ? visibleChs[0].name : "";
                 saveNavigationState();
@@ -1236,13 +1356,13 @@
 
         const activeTopics = getFilteredTopics();
         const visibleChapters = chapters.filter(ch => 
-            ch.section === selectedSection && activeTopics.some(link => link.chapter === ch.name)
+            ch.section === selectedSection && activeTopics.some(link => normalizeItemChapters(link).includes(ch.name))
         );
 
         const visitedSet = new Set(getVisitedLinks());
 
         visibleChapters.forEach(chObj => {
-            const chapterLinks = links.filter(item => item.chapter === chObj.name);
+            const chapterLinks = links.filter(item => normalizeItemChapters(item).includes(chObj.name));
             const isChapterVisited = chapterLinks.length > 0 && chapterLinks.every(item => visitedSet.has(item.url));
 
             const link = document.createElement('a');
@@ -1468,7 +1588,8 @@
             const query = topicSearchQuery.toLowerCase().trim();
             result = result.filter(item => {
                 const topicMatches = item.text && item.text.toLowerCase().includes(query);
-                const chapterMatches = item.chapter && item.chapter.toLowerCase().includes(query);
+                const itemChs = normalizeItemChapters(item);
+                const chapterMatches = itemChs.some(ch => ch.toLowerCase().includes(query));
                 const urlMatches = item.url && item.url.toLowerCase().includes(query);
                 return topicMatches || chapterMatches || urlMatches;
             });
@@ -1491,16 +1612,18 @@
 
         if (!selectedChapter && !activeMonthFilter) return;
 
-        let filtered = [];
+        let filteredWithIdx = [];
         const baseFilteredTopics = getFilteredTopics();
 
         if (activeMonthFilter === "Random Notes") {
             if (!randomNotesIndices) {
                 generateRandomNotesIndices();
             }
-            filtered = randomNotesIndices.map(idx => links[idx]).filter(item => item !== undefined);
+            filteredWithIdx = randomNotesIndices
+                .map(idx => ({ item: links[idx], originalIndex: idx }))
+                .filter(entry => entry.item !== undefined);
         } else if (activeMonthFilter) {
-            filtered = baseFilteredTopics.filter(item => {
+            const tempFiltered = baseFilteredTopics.filter(item => {
                 const dateInfo = parseTopicDateInfo(item.text);
                 if (dateInfo.year === 0) return false;
                 const monthsArr = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -1509,7 +1632,7 @@
                 return formattedMonthYear.toLowerCase() === activeMonthFilter.toLowerCase();
             });
 
-            filtered.sort((a, b) => {
+            tempFiltered.sort((a, b) => {
                 const infoA = parseTopicDateInfo(a.text);
                 const infoB = parseTopicDateInfo(b.text);
                 if (infoA.hasDay !== infoB.hasDay) {
@@ -1522,13 +1645,23 @@
                 }
                 return 0;
             });
+
+            filteredWithIdx = tempFiltered.map(item => ({
+                item,
+                originalIndex: links.indexOf(item)
+            }));
         } else {
-            filtered = baseFilteredTopics.filter(item => item.chapter === selectedChapter);
+            filteredWithIdx = baseFilteredTopics
+                .map((item, originalIndex) => ({ item, originalIndex: links.indexOf(item) }))
+                .filter(entry => normalizeItemChapters(entry.item).includes(selectedChapter));
         }
 
         const visitedSet = new Set(getVisitedLinks());
 
-        filtered.forEach(item => {
+        filteredWithIdx.forEach(({ item, originalIndex }) => {
+            const row = document.createElement('div');
+            row.className = 'topic-row';
+
             const anchor = document.createElement('a');
             anchor.href = item.url;
             anchor.textContent = item.text;
@@ -1545,7 +1678,26 @@
                 renderStats();
             });
 
-            linkList.appendChild(anchor);
+            row.appendChild(anchor);
+
+            if (isEditMode) {
+                const editIconBtn = document.createElement('button');
+                editIconBtn.className = 'icon-btn';
+                editIconBtn.innerHTML = '✏️';
+                editIconBtn.title = 'Edit Topic';
+                editIconBtn.addEventListener('click', () => openEditTopicModal(originalIndex));
+
+                const deleteIconBtn = document.createElement('button');
+                deleteIconBtn.className = 'icon-btn delete-icon-btn';
+                deleteIconBtn.innerHTML = '🗑️';
+                deleteIconBtn.title = 'Delete Topic';
+                deleteIconBtn.addEventListener('click', () => deleteTopic(originalIndex));
+
+                row.appendChild(editIconBtn);
+                row.appendChild(deleteIconBtn);
+            }
+
+            linkList.appendChild(row);
         });
 
         if (activeMonthFilter === "Random Notes") {
@@ -1563,27 +1715,156 @@
         }
     }
 
-    function populateChapterDropdown() {
-        const dropdown = document.getElementById('new-chapter');
-        dropdown.innerHTML = '';
-        chapters.forEach(chObj => {
-            const option = document.createElement('option');
-            option.value = chObj.name;
-            option.textContent = chObj.name;
-            if (!activeMonthFilter && chObj.name === selectedChapter) option.selected = true;
-            dropdown.appendChild(option);
+    editBtn.addEventListener('click', () => {
+        isEditMode = !isEditMode;
+        if (isEditMode) {
+            editBtn.textContent = 'Edit Mode';
+            editBtn.className = 'mode-btn-edit';
+        } else {
+            editBtn.textContent = 'Read Mode';
+            editBtn.className = 'mode-btn-read';
+        }
+        renderMainLinks();
+    });
+
+    const editTopicModalOverlay = document.getElementById('edit-topic-modal-overlay');
+    const closeEditTopicModalBtn = document.getElementById('close-edit-topic-modal-btn');
+    const cancelEditTopicBtn = document.getElementById('cancel-edit-topic-btn');
+    const saveEditTopicBtn = document.getElementById('save-edit-topic-btn');
+    const editTopicTitleInput = document.getElementById('edit-topic-title');
+    const editTopicLinkInput = document.getElementById('edit-topic-link');
+    const tagsContainer = document.getElementById('tags-container');
+
+    function openEditTopicModal(index) {
+        editingLinkIndex = index;
+        const item = links[index];
+        editTopicTitleInput.value = item.text || '';
+        editTopicLinkInput.value = item.url || '';
+
+        const itemTags = normalizeItemChapters(item);
+        renderTagsUI(itemTags);
+
+        editTopicModalOverlay.style.display = 'flex';
+    }
+
+    function closeEditTopicModal() {
+        editTopicModalOverlay.style.display = 'none';
+        editingLinkIndex = null;
+    }
+
+    closeEditTopicModalBtn.addEventListener('click', closeEditTopicModal);
+    cancelEditTopicBtn.addEventListener('click', closeEditTopicModal);
+
+    function renderTagsUI(tagList) {
+        tagsContainer.innerHTML = '';
+        if (!tagList || tagList.length === 0) {
+            tagList = [selectedChapter || "Miscellaneous"];
+        }
+
+        tagList.forEach((currentTag, idx) => {
+            const row = document.createElement('div');
+            row.className = 'tag-row';
+
+            const label = document.createElement('span');
+            label.className = 'tag-label';
+            label.textContent = `tag ${idx + 1} :`;
+
+            const select = document.createElement('select');
+            select.className = 'tag-select';
+
+            chapters.forEach(chObj => {
+                const opt = document.createElement('option');
+                opt.value = chObj.name;
+                opt.textContent = chObj.name;
+                if (chObj.name === currentTag) opt.selected = true;
+                select.appendChild(opt);
+            });
+
+            const addBtn = document.createElement('button');
+            addBtn.type = 'button';
+            addBtn.className = 'icon-btn';
+            addBtn.innerHTML = '+';
+            addBtn.title = 'Add tag';
+            addBtn.addEventListener('click', () => {
+                const currentValues = getSelectedTagsFromUI();
+                currentValues.splice(idx + 1, 0, chapters[0] ? chapters[0].name : "Miscellaneous");
+                renderTagsUI(currentValues);
+            });
+
+            const delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.className = 'icon-btn delete-icon-btn';
+            delBtn.innerHTML = '🗑️';
+            delBtn.title = 'Delete tag';
+            if (tagList.length <= 1) {
+                delBtn.disabled = true;
+                delBtn.style.opacity = '0.5';
+                delBtn.style.cursor = 'not-allowed';
+            } else {
+                delBtn.addEventListener('click', () => {
+                    const currentValues = getSelectedTagsFromUI();
+                    currentValues.splice(idx, 1);
+                    renderTagsUI(currentValues);
+                });
+            }
+
+            row.appendChild(label);
+            row.appendChild(select);
+            row.appendChild(addBtn);
+            row.appendChild(delBtn);
+
+            tagsContainer.appendChild(row);
         });
     }
 
-    document.getElementById('new-chapter').addEventListener('change', (e) => {
-        activeMonthFilter = null;
-        selectedChapter = e.target.value;
-        const found = chapters.find(ch => ch.name === selectedChapter);
-        if (found) selectedSection = found.section;
-        saveNavigationState();
+    function getSelectedTagsFromUI() {
+        const selects = tagsContainer.querySelectorAll('.tag-select');
+        const values = [];
+        selects.forEach(s => values.push(s.value));
+        return values;
+    }
+
+    saveEditTopicBtn.addEventListener('click', () => {
+        if (editingLinkIndex === null) return;
+        const newText = editTopicTitleInput.value.trim();
+        let newUrl = editTopicLinkInput.value.trim();
+        const newTags = getSelectedTagsFromUI();
+
+        if (!newText || !newUrl) {
+            alert("Title and link are required.");
+            return;
+        }
+
+        if (newTags.length === 0) {
+            alert("At least 1 tag is required.");
+            return;
+        }
+
+        if (!/^https?:\/\//i.test(newUrl)) newUrl = 'https://' + newUrl;
+
+        links[editingLinkIndex] = {
+            ...links[editingLinkIndex],
+            text: newText,
+            url: newUrl,
+            chapters: Array.from(new Set(newTags))
+        };
+
+        delete links[editingLinkIndex].chapter;
+
+        saveData(true);
+        closeEditTopicModal();
         renderAll();
-        renderModalTable();
     });
+
+    function deleteTopic(index) {
+        const item = links[index];
+        const confirmMsg = `are you sure you want to delete this topic ?\n\n${item ? item.text : ''}`;
+        if (confirm(confirmMsg)) {
+            links.splice(index, 1);
+            saveData(true);
+            renderAll();
+        }
+    }
 
     function setupDragEvents(row, container, dataArray, onReorder) {
         row.addEventListener('dragstart', (e) => {
@@ -1614,109 +1895,6 @@
         });
     }
 
-    function renderModalTable() {
-        document.querySelector('#modal-overlay .modal-header h3').textContent = `Manage Links : ${activeMonthFilter || selectedChapter}`;
-        modalTableBody.innerHTML = '';
-
-        let filtered = [];
-        if (activeMonthFilter === "Random Notes") {
-            if (!randomNotesIndices) generateRandomNotesIndices();
-            filtered = randomNotesIndices.map(origIdx => ({ ...links[origIdx], originalIndex: origIdx }));
-        } else if (activeMonthFilter) {
-            const baseFilteredTopics = getFilteredTopics();
-            filtered = baseFilteredTopics
-                .map((item) => ({ ...item, originalIndex: links.indexOf(item) }))
-                .filter(item => {
-                    const dateInfo = parseTopicDateInfo(item.text);
-                    if (dateInfo.year === 0) return false;
-                    const monthsArr = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-                    const monthStr = monthsArr[dateInfo.month];
-                    const formattedMonthYear = `${monthStr} ${dateInfo.year}`;
-                    return formattedMonthYear.toLowerCase() === activeMonthFilter.toLowerCase();
-                });
-
-            filtered.sort((a, b) => {
-                const infoA = parseTopicDateInfo(a.text);
-                const infoB = parseTopicDateInfo(b.text);
-                if (infoA.hasDay !== infoB.hasDay) {
-                    return infoA.hasDay ? 1 : -1;
-                }
-                if (infoA.hasDay && infoB.hasDay) {
-                    if (infoA.day !== infoB.day) {
-                        return infoB.day - infoA.day;
-                    }
-                }
-                return 0;
-            });
-        } else {
-            filtered = links
-                .map((item, originalIndex) => ({ ...item, originalIndex }))
-                .filter(item => item.chapter === selectedChapter);
-        }
-
-        filtered.forEach((item, displayIndex) => {
-            const row = document.createElement('tr');
-            row.className = 'draggable';
-            row.draggable = true;
-            row.dataset.index = displayIndex;
-
-            const optionsHTML = chapters.map(chObj => 
-                `<option value="${chObj.name}" ${chObj.name === item.chapter ? 'selected' : ''}>${chObj.name}</option>`
-            ).join('');
-
-            row.innerHTML = `
-                <td>${item.text}</td>
-                <td>
-                    <select class="chapter-select" data-orig-index="${item.originalIndex}">
-                        ${optionsHTML}
-                    </select>
-                </td>
-                <td>
-                    <button class="edit-btn" data-orig-index="${item.originalIndex}">Edit</button>
-                    <button class="delete-btn" data-orig-index="${item.originalIndex}">Delete</button>
-                </td>
-            `;
-
-            row.querySelector('.chapter-select').addEventListener('change', (e) => {
-                changeLinkChapter(item.originalIndex, e.target.value);
-            });
-            row.querySelector('.edit-btn').addEventListener('click', () => {
-                editLink(item.originalIndex);
-            });
-            row.querySelector('.delete-btn').addEventListener('click', () => {
-                deleteLink(item.originalIndex);
-            });
-
-            setupDragEvents(row, modalTableBody, filtered, () => {
-                const reorderedFiltered = filtered.map(({ originalIndex, ...cleanItem }) => cleanItem);
-
-                let filterIdx = 0;
-                links = links.map(item => {
-                    if (activeMonthFilter || item.chapter === selectedChapter) {
-                        return reorderedFiltered[filterIdx++];
-                    }
-                    return item;
-                });
-
-                saveData(true);
-                renderAll();
-                renderModalTable();
-            });
-            modalTableBody.appendChild(row);
-        });
-    }
-
-    function changeLinkChapter(index, newChapter) {
-        links[index].chapter = newChapter;
-        if (!activeMonthFilter) {
-            selectedChapter = newChapter;
-        }
-        saveNavigationState();
-        saveData(true);
-        renderAll();
-        renderModalTable();
-    }
-
     function updateClearButtonState() {
         clearSearchBtn.disabled = false;
     }
@@ -1728,7 +1906,7 @@
         
         const activeTopics = getFilteredTopics();
         const availableChapters = chapters.filter(ch => 
-            activeTopics.some(link => link.chapter === ch.name)
+            activeTopics.some(link => normalizeItemChapters(link).includes(ch.name))
         );
         
         if (!activeMonthFilter && !availableChapters.some(ch => ch.name === selectedChapter)) {
@@ -1750,7 +1928,7 @@
 
         const activeTopics = getFilteredTopics();
         const availableChapters = chapters.filter(ch => 
-            activeTopics.some(link => link.chapter === ch.name)
+            activeTopics.some(link => normalizeItemChapters(link).includes(ch.name))
         );
         
         if (!activeMonthFilter && !availableChapters.some(ch => ch.name === selectedChapter)) {
@@ -1860,7 +2038,7 @@
                     const width = measurer.getBoundingClientRect().width;
                     if (width > maxTopicWidth) maxTopicWidth = width;
                 });
-                rightContainer.style.minWidth = `${Math.ceil(maxTopicWidth) + 60}px`;
+                rightContainer.style.minWidth = `${Math.ceil(maxTopicWidth) + 120}px`;
             }
         }
 
@@ -1881,62 +2059,14 @@
         document.body.removeChild(measurer);
     }
 
-    addLinkBtn.addEventListener('click', () => {
-        const text = newTextInput.value.trim();
-        let url = newUrlInput.value.trim();
-        const chapter = document.getElementById('new-chapter').value;
-
-        if (!text || !url) {
-            alert('Please fill in both text and URL.');
-            return;
-        }
-
-        if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
-
-        links.push({ text, url, chapter, color: 'blue' });
-        newTextInput.value = '';
-        newUrlInput.value = '';
-        saveData(true);
-        renderModalTable();
-    });
-
     window.addEventListener('click', (event) => {
-        if (event.target === modalOverlay) modalOverlay.style.display = 'none';
+        if (event.target === editTopicModalOverlay) closeEditTopicModal();
         if (event.target === chapterModalOverlay) chapterModalOverlay.style.display = 'none';
         if (event.target === sectionModalOverlay) sectionModalOverlay.style.display = 'none';
         if (event.target === statsModalOverlay) closeStatsModal();
         const doubleDateModalOverlay = document.getElementById('double-date-modal-overlay');
         if (event.target === doubleDateModalOverlay) doubleDateModalOverlay.style.display = 'none';
     });
-
-    function editLink(index) {
-        const item = links[index];
-        const newText = prompt("Edit display text:", item.text);
-        if (newText === null) return;
-
-        let newUrl = prompt("Edit URL:", item.url);
-        if (newUrl === null) return;
-
-        if (newUrl && !/^https?:\/\//i.test(newUrl)) newUrl = 'https://' + newUrl;
-
-        if (newText.trim() && newUrl.trim()) {
-            links[index] = { 
-                text: newText.trim(), 
-                url: newUrl.trim(), 
-                chapter: item.chapter, 
-                color: 'blue' 
-            };
-            saveData(true);
-            renderAll();
-            renderModalTable();
-        }
-    }
-
-    function deleteLink(index) {
-        links.splice(index, 1);
-        saveData(true);
-        renderModalTable();
-    }
 
     addSectionBtn.addEventListener('click', () => {
         const nameInput = document.getElementById('new-section-name');
@@ -2031,7 +2161,12 @@
 
         chapters[index].name = cleanName;
         links.forEach(item => {
-            if (item.chapter === oldObj.name) item.chapter = cleanName;
+            const chs = normalizeItemChapters(item);
+            const idx = chs.indexOf(oldObj.name);
+            if (idx !== -1) {
+                chs[idx] = cleanName;
+                item.chapters = chs;
+            }
         });
 
         if (selectedChapter === oldObj.name) selectedChapter = cleanName;
@@ -2052,7 +2187,12 @@
         }
 
         links.forEach(item => {
-            if (item.chapter === chapterName) item.chapter = "Miscellaneous";
+            const chs = normalizeItemChapters(item);
+            const idx = chs.indexOf(chapterName);
+            if (idx !== -1) {
+                chs[idx] = "Miscellaneous";
+                item.chapters = Array.from(new Set(chs));
+            }
         });
 
         chapters = chapters.filter(ch => ch.name !== chapterName);
@@ -2240,15 +2380,6 @@
         }
     });
 
-    editBtn.addEventListener('click', () => {
-        renderModalTable();
-        modalOverlay.style.display = 'flex';
-    });
-
-    closeModalBtn.addEventListener('click', () => {
-        modalOverlay.style.display = 'none';
-    });
-
     editSectionsBtn.addEventListener('click', () => {
         renderSectionModalTable();
         sectionModalOverlay.style.display = 'flex';
@@ -2267,90 +2398,101 @@
         chapterModalOverlay.style.display = 'none';
     });
 
-const checkDoubleDatesBtn = document.getElementById('check-double-dates-btn');
-const doubleDateModalOverlay = document.getElementById('double-date-modal-overlay');
-const doubleDateModalTitle = document.getElementById('double-date-modal-title');
-const doubleDateTableBody = document.getElementById('double-date-table-body');
+    const checkDoubleDatesBtn = document.getElementById('check-double-dates-btn');
+    const doubleDateModalOverlay = document.getElementById('double-date-modal-overlay');
+    const doubleDateModalTitle = document.getElementById('double-date-modal-title');
+    const doubleDateTableBody = document.getElementById('double-date-table-body');
 
-let doubleDateGroups = [];
-let currentDoubleDateIndex = 0;
+    let doubleDateGroups = [];
+    let currentDoubleDateIndex = 0;
 
-function findDoubleDateGroups() {
-    const dateMap = {};
-    links.forEach((link, index) => {
-        const dateInfo = parseTopicDateInfo(link.text);
-        if (dateInfo.hasDay && dateInfo.year > 0) {
-            const dateKey = `${dateInfo.day}-${dateInfo.month}-${dateInfo.year}`;
-            if (!dateMap[dateKey]) {
-                dateMap[dateKey] = [];
-            }
-            dateMap[dateKey].push({ ...link, globalIndex: index });
-        }
-    });
-    return Object.values(dateMap).filter(group => group.length > 1);
-}
-
-checkDoubleDatesBtn.addEventListener('click', () => {
-    doubleDateGroups = findDoubleDateGroups();
-    if (doubleDateGroups.length === 0) {
-        alert("No double dates found!");
-        return;
-    }
-    currentDoubleDateIndex = 0;
-    showDoubleDateGroupModal();
-});
-
-function showDoubleDateGroupModal() {
-    if (currentDoubleDateIndex >= doubleDateGroups.length) {
-        doubleDateModalOverlay.style.display = 'none';
-        alert("All double dates resolved!");
-        saveData(true);
-        return;
-    }
-
-    const currentGroup = doubleDateGroups[currentDoubleDateIndex];
-    if (currentGroup.length <= 1) {
-        currentDoubleDateIndex++;
-        showDoubleDateGroupModal();
-        return;
-    }
-
-    doubleDateModalOverlay.style.display = 'flex';
-    doubleDateModalTitle.textContent = `Double Date Set ${currentDoubleDateIndex + 1} of ${doubleDateGroups.length}`;
-    doubleDateTableBody.innerHTML = '';
-
-    currentGroup.forEach((item, localIndex) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td><a href="${item.url}" target="_blank" rel="noopener noreferrer">${item.text}</a></td>
-            <td>${item.chapter}</td>
-            <td>
-                <button class="delete-btn" data-local-idx="${localIndex}">Delete</button>
-            </td>
-        `;
-        row.querySelector('.delete-btn').addEventListener('click', () => removeDoubleDateItem(localIndex));
-        doubleDateTableBody.appendChild(row);
-    });
-}
-
-function removeDoubleDateItem(localIndex) {
-    const currentGroup = doubleDateGroups[currentDoubleDateIndex];
-    const itemToRemove = currentGroup[localIndex];
-
-    links = links.filter((_, idx) => idx !== itemToRemove.globalIndex);
-
-    doubleDateGroups.forEach(group => {
-        group.forEach(item => {
-            if (item.globalIndex > itemToRemove.globalIndex) {
-                item.globalIndex--;
+    function findDoubleDateGroups() {
+        const dateMap = {};
+        links.forEach((link, index) => {
+            const dateInfo = parseTopicDateInfo(link.text);
+            if (dateInfo.hasDay && dateInfo.year > 0) {
+                const dateKey = `${dateInfo.day}-${dateInfo.month}-${dateInfo.year}`;
+                if (!dateMap[dateKey]) {
+                    dateMap[dateKey] = [];
+                }
+                dateMap[dateKey].push({ ...link, globalIndex: index });
             }
         });
+
+        const results = [];
+        Object.values(dateMap).forEach(group => {
+            if (group.length > 1) {
+                const uniqueUrls = new Set(group.map(g => g.url));
+                if (uniqueUrls.size > 1) {
+                    results.push(group);
+                }
+            }
+        });
+        return results;
+    }
+
+    checkDoubleDatesBtn.addEventListener('click', () => {
+        doubleDateGroups = findDoubleDateGroups();
+        if (doubleDateGroups.length === 0) {
+            alert("No double dates found!");
+            return;
+        }
+        currentDoubleDateIndex = 0;
+        showDoubleDateGroupModal();
     });
 
-    currentGroup.splice(localIndex, 1);
-    saveData(true);
-    showDoubleDateGroupModal();
-}
+    function showDoubleDateGroupModal() {
+        if (currentDoubleDateIndex >= doubleDateGroups.length) {
+            doubleDateModalOverlay.style.display = 'none';
+            alert("All double dates resolved!");
+            saveData(true);
+            return;
+        }
+
+        const currentGroup = doubleDateGroups[currentDoubleDateIndex];
+        if (currentGroup.length <= 1) {
+            currentDoubleDateIndex++;
+            showDoubleDateGroupModal();
+            return;
+        }
+
+        doubleDateModalOverlay.style.display = 'flex';
+        doubleDateModalTitle.textContent = `Double Date Set ${currentDoubleDateIndex + 1} of ${doubleDateGroups.length}`;
+        doubleDateTableBody.innerHTML = '';
+
+        currentGroup.forEach((item, localIndex) => {
+            const row = document.createElement('tr');
+            const itemChs = normalizeItemChapters(item).join(', ');
+            row.innerHTML = `
+                <td><a href="${item.url}" target="_blank" rel="noopener noreferrer">${item.text}</a></td>
+                <td>${itemChs}</td>
+                <td>
+                    <button class="delete-btn" data-local-idx="${localIndex}">Delete</button>
+                </td>
+            `;
+            row.querySelector('.delete-btn').addEventListener('click', () => removeDoubleDateItem(localIndex));
+            doubleDateTableBody.appendChild(row);
+        });
+    }
+
+    function removeDoubleDateItem(localIndex) {
+        const currentGroup = doubleDateGroups[currentDoubleDateIndex];
+        const itemToRemove = currentGroup[localIndex];
+
+        links = links.filter((_, idx) => idx !== itemToRemove.globalIndex);
+
+        doubleDateGroups.forEach(group => {
+            group.forEach(item => {
+                if (item.globalIndex > itemToRemove.globalIndex) {
+                    item.globalIndex--;
+                }
+            });
+        });
+
+        currentGroup.splice(localIndex, 1);
+        saveData(true);
+        showDoubleDateGroupModal();
+    }
 </script>
 </body>
 </html>
