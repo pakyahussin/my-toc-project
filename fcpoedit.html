@@ -1354,10 +1354,7 @@
         chapterList.innerHTML = '';
         chapterSelect.innerHTML = '';
 
-        const activeTopics = getFilteredTopics();
-        const visibleChapters = chapters.filter(ch => 
-            ch.section === selectedSection && activeTopics.some(link => normalizeItemChapters(link).includes(ch.name))
-        );
+        const visibleChapters = chapters.filter(ch => ch.section === selectedSection);
 
         const visitedSet = new Set(getVisitedLinks());
 
@@ -2170,25 +2167,41 @@
     function editChapter(index) {
         const oldObj = chapters[index];
         const newName = prompt("Edit chapter name:", oldObj.name);
-        if (!newName || !newName.trim() || newName === oldObj.name) return;
+        if (!newName || !newName.trim()) return;
 
         const cleanName = newName.trim();
-        if (chapters.some(ch => ch.name === cleanName)) {
+        if (cleanName === oldObj.name) return;
+
+        if (chapters.some((ch, idx) => idx !== index && ch.name.trim().toLowerCase() === cleanName.toLowerCase())) {
             alert("Chapter name already exists.");
             return;
         }
 
+        const oldChapterNameClean = oldObj.name.trim();
         chapters[index].name = cleanName;
+        
+        // Safely update tags for all matching topics, ignoring extra spaces/case differences
         links.forEach(item => {
-            const chs = normalizeItemChapters(item);
-            const idx = chs.indexOf(oldObj.name);
-            if (idx !== -1) {
-                chs[idx] = cleanName;
-                item.chapters = chs;
+            let chs = normalizeItemChapters(item);
+            let updated = false;
+            
+            chs = chs.map(chName => {
+                if (chName && chName.trim().toLowerCase() === oldChapterNameClean.toLowerCase()) {
+                    updated = true;
+                    return cleanName;
+                }
+                return chName;
+            });
+
+            if (updated) {
+                item.chapters = Array.from(new Set(chs));
+                delete item.chapter;
             }
         });
 
-        if (selectedChapter === oldObj.name) selectedChapter = cleanName;
+        if (selectedChapter && selectedChapter.trim().toLowerCase() === oldChapterNameClean.toLowerCase()) {
+            selectedChapter = cleanName;
+        }
 
         saveData(true);
         renderChapterModalTable();
